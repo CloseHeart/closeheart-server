@@ -7,13 +7,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
- * DB¸¦ °ü¸®ÇÒ ¼ö ÀÖ´Â ±âº»ÀûÀÎ ÇÔ¼öµéÀ» ´ã°í ÀÖ´Â Class
+ * DBë¥¼ ê´€ë¦¬í•  ìˆ˜ ìˆëŠ” ê¸°ë³¸ì ì¸ í•¨ìˆ˜ë“¤ì„ ë‹´ê³  ìˆëŠ” Class
  * @author Minjae Seon
  * @date 2020.11.08
  */
 public class DBManager {
 	/*
-	 * DB ConnectionÀ» ¾ò¾î¿À´Â ÇÔ¼ö
+	 * DB Connectionì„ ì–»ì–´ì˜¤ëŠ” í•¨ìˆ˜
 	 * @author Minjae Seon
 	 * @return Connection
 	 * @throw ClassNotFoundException
@@ -24,7 +24,7 @@ public class DBManager {
 		return DriverManager.getConnection(DBInfo.url, DBInfo.id, DBInfo.password);
 	}
 	
-	/* DB¿¡ Query¸¦ Àü¼ÛÇÏ´Â ÇÔ¼ö (¼º°ø ¿©ºÎ ¸®ÅÏ)
+	/* DBì— Queryë¥¼ ì „ì†¡í•˜ëŠ” í•¨ìˆ˜ (ì„±ê³µ ì—¬ë¶€ ë¦¬í„´)
 	 * @author Minjae Seon
 	 * @return Boolean
 	 * @throw SQLException
@@ -35,7 +35,7 @@ public class DBManager {
 	}
 	
 	/*
-	 * DB¿¡ Query¸¦ Àü¼ÛÇÏ´Â ÇÔ¼ö (°á°ú°ª ¸®ÅÏ)
+	 * DBì— Queryë¥¼ ì „ì†¡í•˜ëŠ” í•¨ìˆ˜ (ê²°ê³¼ê°’ ë¦¬í„´)
 	 * @author Minjae Seon
 	 * @return ResultSet 
 	 * @throw SQLException
