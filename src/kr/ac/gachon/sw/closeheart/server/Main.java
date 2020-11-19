@@ -6,6 +6,8 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
+
 public class Main {
 
 	private static Set<String> names = new HashSet<>();
