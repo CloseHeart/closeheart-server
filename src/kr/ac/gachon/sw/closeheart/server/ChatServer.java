@@ -8,7 +8,7 @@ import java.util.concurrent.Executors;
 
 import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
 
-public class Main {
+public class ChatServer {
 
 	private static Set<String> names = new HashSet<>();
 	private static Set<PrintWriter> writers = new HashSet<>();
