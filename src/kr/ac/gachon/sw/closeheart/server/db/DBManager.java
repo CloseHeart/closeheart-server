@@ -95,4 +95,14 @@ public class DBManager {
 
 		return sm.execute(strBuilder.toString());
 	}
+	
+	public static ResultSet selectQuery(Connection connection, String tableName, String userMail, String userPw) throws SQLException {
+		Statement sm = connection.createStatement();
+		
+		StringBuilder strBuilder = new StringBuilder();
+		//strBuilder.append("select exists(select * from " + tableName + "where user_mail = " + userMail + " and user_pw = " + userPw + ");");
+		strBuilder.append("select user_mail,user_pw from " + tableName + " where user_mail = " + "\"" +  userMail + "\"" + " and user_pw = " + "\"" + userPw+ "\"");
+		System.out.println(strBuilder.toString());
+		return sm.executeQuery(strBuilder.toString());
+	}
 }
