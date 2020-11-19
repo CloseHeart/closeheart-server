@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -48,15 +49,15 @@ public class DBManager {
 		return sm.executeQuery(query);
 	}
 	
-	/* Insert Into 함수
+	/* Insert Into Query 함수
 	 * @author Minjae Seon
-	 * @param Connection Connection
-	 * @param tableName tableName
-	 * @param elements HashMap<String, String>
+	 * @param connection Connection
+	 * @param tableName String
+	 * @param elements HashMap<String, Object>
 	 * @return Boolean
 	 * @throw SQLException
 	 */
-	public static boolean insertQuery(Connection connection, String tableName, HashMap<String, String> elements) throws SQLException {
+	public static boolean insertQuery(Connection connection, String tableName, HashMap<String, Object> elements) throws SQLException {
 		// insert into TABLE_NAME (Attribute 1, Attribute 2..) VALUES (Value 1, Value 2..)
 		Statement sm = connection.createStatement();
 		
@@ -85,7 +86,7 @@ public class DBManager {
 			String key = keySetIterator.next();
 			
 			// Value 값 가져옴
-			String value = elements.get(key);
+			Object value = elements.get(key);
 			
 			strBuilder.append("\"" + value + "\"");
 			
@@ -97,13 +98,58 @@ public class DBManager {
 		return sm.execute(strBuilder.toString());
 	}
 	
-	public static ResultSet selectQuery(Connection connection, String tableName, String userMail, String userPw) throws SQLException {
+	/* Select Query 함수
+	 * @author Taehyun Park, Minjae Seon
+	 * @param connection Connection 
+	 * @param tableName String
+	 * @param attributeName ArrayList<String>
+	 * @param condition HashMap<String, Object>
+	 * @return ResultSet
+	 * @throw SQLException
+	 */
+	public static ResultSet selectQuery(Connection connection, String tableName, ArrayList<String> attributeName, HashMap<String, Object> condition) throws SQLException {
 		Statement sm = connection.createStatement();
 		
 		StringBuilder strBuilder = new StringBuilder();
-		//strBuilder.append("select exists(select * from " + tableName + "where user_mail = " + userMail + " and user_pw = " + userPw + ");");
-		strBuilder.append("select user_mail,user_pw from " + tableName + " where user_mail = " + "\"" +  userMail + "\"" + " and user_pw = " + "\"" + userPw+ "\"");
-		System.out.println(strBuilder.toString());
-		return sm.executeQuery(strBuilder.toString());
+		strBuilder.append("select ");
+		
+		// Attribute Name이 Null이거나 비어있지 않은 경우
+		if(attributeName != null && !attributeName.isEmpty()) {
+			// Attribute를 가져와서 Query문 생성
+			Iterator<String> attrIterator = attributeName.iterator();
+			while(attrIterator.hasNext()) {
+				strBuilder.append(attrIterator.next());
+				
+				if(attrIterator.hasNext()) strBuilder.append(", ");
+				else strBuilder.append("");
+			}
+			
+			// Table Name 삽입
+			strBuilder.append(" from " + tableName);
+			
+			// Condition이 Null이거나 비어있지 않은 경우
+			if(condition != null && !condition.isEmpty()) {
+				// where 삽입
+				strBuilder.append(" where ");
+				
+				// Condition HashMap을 가져와서 Query문 생성
+				Iterator<String> conditionIterator = condition.keySet().iterator();
+				while(conditionIterator.hasNext()) {
+					String key = conditionIterator.next();
+					Object value = condition.get(key);
+					strBuilder.append(key + " = " + "\"" + value + "\"");
+					
+					if(conditionIterator.hasNext()) strBuilder.append(" and ");
+					else strBuilder.append(";");
+				}
+			}
+			// Condition이 비었다면 ;로 마무리
+			else strBuilder.append(";");
+			
+			// 만든 Query문을 Execute함
+			return sm.executeQuery(strBuilder.toString());
+		}
+		// 만약 문제가 있다면 null을 리턴
+		return null;
 	}
 }
