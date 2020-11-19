@@ -32,14 +32,22 @@ public class LoginServer {
 				out = new PrintWriter(socket.getOutputStream(), true);
 				Gson gson = new Gson();
 				
+				// Client에 로그인 요청을 보냄
 				HashMap<String, String> loginRequestHashMap = new HashMap<String, String>();
 				loginRequestHashMap.put("msg", "Login Please");
 				out.print(Util.createResponseJSON(401, loginRequestHashMap));
-
-				String clientRequest = in.nextLine();
-				Map<String, Object> requestMap = new HashMap<String, Object>();
-				requestMap = (Map<String, Object>) gson.fromJson(clientRequest, requestMap.getClass());
 				
+				Map<String, Object> requestMap = new HashMap<String, Object>();
+				
+				while(in.hasNext()) {
+					// Client가 보낸 JSON을 받아서 Map 형태로 변환
+					String clientRequest = in.nextLine();
+					requestMap = (Map<String, Object>) gson.fromJson(clientRequest, requestMap.getClass());
+					break;
+				}
+				
+				// 여기서부터 계정 체크 해야함
+					
 			} catch (Exception e) {
 				System.out.println("Login Server Error! " + e.getMessage());
 			}
