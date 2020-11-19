@@ -1,34 +1,22 @@
 package kr.ac.gachon.sw.closeheart.server.db;
-import java.sql.*;
-public class DBConnect {
 
-	public static void main(String[] args) {
+import java.sql.Connection;
+import java.util.HashMap;
+
+public class DBConnect {
+	public static boolean createUser(String email, String password, String nickName) {
+		Connection dbConnection;
 		try {
-			// DB connection
-			Connection con = DBManager.getDBConnection();
-			
-			// select Äõ¸®
-			// Å×ÀÌºí ºÒ·¯¿À±â
-			String query = "select * from userAccount";
-			// Äõ¸® execute, °´Ã¼ »ý¼º
-			Statement st = con.createStatement();
-			ResultSet rs = st.executeQuery(query);
-			// ResultSet rs = DBManager.sendQuery_result(con, query);
-			
-			while(rs.next()) {
-				String name = rs.getString("user_name");
-				String id = rs.getString("user_id");
-				String pw = rs.getString("user_pw");
-				String email = rs.getString("user_email");
-				System.out.format("%s, %s, %s, %s\n",name,id,pw,email);
-			}
-			st.close();
-			
-		}catch(Exception e) {
-			System.out.println("Exception!");
-			System.out.println(e.getMessage());
+			dbConnection = DBManager.getDBConnection();
+			HashMap<String, String> newUser = new HashMap<String, String>();
+			newUser.put("user_mail", email);
+			newUser.put("user_pw", password);
+			newUser.put("user_nick", nickName);
+			return DBManager.insertQuery(dbConnection, "account", newUser);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		
+		return false;
 	}
 
 }
