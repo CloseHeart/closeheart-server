@@ -44,8 +44,7 @@ public class DBManager {
 	 * @throw SQLException
 	 */
 	public static ResultSet sendQuery_result(Connection connection, String query) throws SQLException {
-		Statement sm = connection.createStatement();
-		ResultSet test = sm.executeQuery(query);		
+		Statement sm = connection.createStatement();		
 		return sm.executeQuery(query);
 	}
 	
