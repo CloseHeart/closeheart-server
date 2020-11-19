@@ -14,6 +14,7 @@ import java.util.Iterator;
  * @date 2020.11.08
  */
 public class DBManager {
+	
 	/*
 	 * DB Connection을 얻어오는 함수
 	 * @author Minjae Seon
@@ -43,7 +44,7 @@ public class DBManager {
 	 * @throw SQLException
 	 */
 	public static ResultSet sendQuery_result(Connection connection, String query) throws SQLException {
-		Statement sm = connection.createStatement();
+		Statement sm = connection.createStatement();		
 		return sm.executeQuery(query);
 	}
 	
