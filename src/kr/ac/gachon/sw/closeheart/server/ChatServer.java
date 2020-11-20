@@ -19,12 +19,35 @@ public class ChatServer {
 
 	public static void main(String[] args) throws Exception {
 		System.out.println("The chat server is running...");
+		Scanner keyborad = new Scanner(System.in);
+		ServerSocket servercocket = null;
+		Socket socekt =  null;
+		String fileName = "input.txt";
+
+		try{
+			servercocket = new ServerSocket(7777);
+			System.out.println("Waiting for client..");
+
+			socekt = servercocket.accept();
+			System.out.println("Connected with client.");
+			FileSender fs = new FileSender(socekt, fileName);
+			fs.start();
+
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}
+		finally {
+			System.out.println("End of ChatServer");
+		}
+		/*
 		ExecutorService pool = Executors.newFixedThreadPool(500);
 		try (ServerSocket listener = new ServerSocket(59001)) {
 			while (true) {
 				pool.execute(new Handler(listener.accept()));
 			}
 		}
+		*/
 	}
 
 	private static class Handler implements Runnable {
