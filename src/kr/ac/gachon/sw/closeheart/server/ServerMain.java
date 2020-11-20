@@ -9,6 +9,7 @@ public class ServerMain {
 		// Login Server 가동 
 		// 서버 시작시에는 무조건 Login Server만 돌고 있음
 		ExecutorService loginServerPool = Executors.newFixedThreadPool(1000);
+		
 		try (ServerSocket listener = new ServerSocket(21325)) {
 			// 서버 시작 알림 Print
 			System.out.println("User Server Starting....");
