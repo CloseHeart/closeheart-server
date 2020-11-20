@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.Scanner;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import kr.ac.gachon.sw.closeheart.server.util.Util;
 
@@ -30,19 +33,22 @@ public class LoginServer {
 			try {
 				in = new Scanner(socket.getInputStream());
 				out = new PrintWriter(socket.getOutputStream(), true);
-				Gson gson = new Gson();
 				
 				// Client에 로그인 요청을 보냄
-				HashMap<String, String> loginRequestHashMap = new HashMap<String, String>();
-				loginRequestHashMap.put("msg", "Login Please");
-				out.print(Util.createResponseJSON(401, loginRequestHashMap));
-				
-				Map<String, Object> requestMap = new HashMap<String, Object>();
-				
+				out.print(Util.createSingleKeyValueJSON(401, "msg", "Login Please"));
+
 				while(in.hasNext()) {
-					// Client가 보낸 JSON을 받아서 Map 형태로 변환
+					// Client가 보낸 JSON을 받아서 JsonArray 형태로 변환
 					String clientRequest = in.nextLine();
-					requestMap = (Map<String, Object>) gson.fromJson(clientRequest, requestMap.getClass());
+					JsonArray clientJson = JsonParser.parseString(clientRequest).getAsJsonArray();
+					
+					if(!clientJson.isJsonNull() && clientJson.get(0).toString().equals("200")) {
+						
+					}
+					else {
+						out.print(Util.createSingleKeyValueJSON(500, "msg", "Not Valided Request!"));
+					}
+					
 					break;
 				}
 				

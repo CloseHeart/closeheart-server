@@ -4,8 +4,6 @@ import java.net.ServerSocket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
-
 public class ServerMain {
 	public static void main(String[] args) {
 		// Login Server 가동 
