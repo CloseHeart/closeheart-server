@@ -95,7 +95,9 @@ public class DBManager {
 			else strBuilder.append(");");
 		}
 
-		return sm.execute(strBuilder.toString());
+		int check = sm.executeUpdate(strBuilder.toString());
+		if(check == 0) return false;
+		else return true;
 	}
 	
 	/* Select Query 함수
