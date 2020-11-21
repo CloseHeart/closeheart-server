@@ -74,7 +74,6 @@ public class Util {
 	 * @return 유저 Auth Token
 	 */
 	public static String createAuthToken(String id, String pw) {
-		System.out.println("createtoken");
 		// 유저 정보 인증
 		if(DBConnect.loginMatchUser(id, pw)) {
 			// 안전을 위해 난수 생성을 통해 Token 복제를 방지함
