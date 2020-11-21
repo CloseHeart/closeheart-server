@@ -1,9 +1,17 @@
 package kr.ac.gachon.sw.closeheart.server.util;
 
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Random;
 
 import com.google.gson.JsonObject;
+import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
 
 public class Util {
 	/*
@@ -24,7 +32,7 @@ public class Util {
 			responseJSON.addProperty(key, value);
 		}
 		
-		return responseJSON.getAsString();
+		return responseJSON.toString();
 	}
 	
 	/*
@@ -38,6 +46,52 @@ public class Util {
 		JsonObject responseJSON = new JsonObject();
 		responseJSON.addProperty("responseCode", responseCode);
 		responseJSON.addProperty(key, value);
-		return responseJSON.getAsString();
+		return responseJSON.toString();
+	}
+
+	/*
+	 * SHA-256 암호화
+	 * @author Minjae Seon
+	 * @param originalString 원본 문자열
+	 * @return SHA-256로 암호화된 문자열
+	 */
+	public static String encryptSHA256(String originalString) {
+		try {
+			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+			byte[] stringBytes = originalString.getBytes(StandardCharsets.UTF_8);
+			messageDigest.update(stringBytes);
+			return String.format("%064x", new BigInteger(1, messageDigest.digest()));
+		} catch (NoSuchAlgorithmException e) {
+			return "";
+		}
+	}
+
+	/*
+	 * User의 인증 Token 생성
+	 * @author Minjae Seon
+	 * @param id 유저의 Email
+	 * @param pw 유저의 Password
+	 * @return 유저 Auth Token
+	 */
+	public static String createAuthToken(String id, String pw) {
+		System.out.println("createtoken");
+		// 유저 정보 인증
+		if(DBConnect.loginMatchUser(id, pw)) {
+			// 안전을 위해 난수 생성을 통해 Token 복제를 방지함
+			Random random = new Random();
+			int randomInt = random.nextInt() + 1;
+
+			// 또한 생성 시각도 삽입
+			Calendar cal = Calendar.getInstance();
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddhhmmss");
+
+			// 이메일과 생성 시각, 난수를 통해 SHA256으로 감싸고 이를 유저를 인증하기 위한 토큰으로 사용함
+			String token = id + dateFormat.format(cal.getTime()) + String.valueOf(randomInt);
+
+			// 생성된 토큰 리턴
+			return Util.encryptSHA256(token);
+		}
+		// 인증에 실패하면 null
+		else return null;
 	}
 }

@@ -11,6 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
 import kr.ac.gachon.sw.closeheart.server.util.Util;
 
 public class LoginServer {
@@ -31,30 +32,50 @@ public class LoginServer {
 
 		public void run() {
 			try {
+				System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Connected");
 				in = new Scanner(socket.getInputStream());
 				out = new PrintWriter(socket.getOutputStream(), true);
-				
-				// Client에 로그인 요청을 보냄
-				out.print(Util.createSingleKeyValueJSON(401, "msg", "Login Please"));
 
-				while(in.hasNext()) {
-					// Client가 보낸 JSON을 받아서 JsonArray 형태로 변환
+				while(in.hasNextLine()) {
+					// Client가 보낸 JSON을 받아서 JsonObject 형태로 변환
 					String clientRequest = in.nextLine();
-					JsonArray clientJson = JsonParser.parseString(clientRequest).getAsJsonArray();
-					
-					if(!clientJson.isJsonNull() && clientJson.get(0).toString().equals("200")) {
-						
+
+					JsonObject clientJson = JsonParser.parseString(clientRequest).getAsJsonObject();
+
+					// JSON이 Null이 아니고 요청 코드가 100이라면
+					if(!clientJson.isJsonNull() && clientJson.get("requestCode").getAsInt() == 100) {
+						System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Login Request");
+						// 함께 담긴 id / pw 값을 얻음
+						String id = clientJson.get("id").getAsString();
+						String pw = clientJson.get("pw").getAsString();
+
+						// 로그인 토큰 생성
+						String loginToken = Util.createAuthToken(id, pw);
+
+						// LoginToken이 생성되었다면
+						if(loginToken != null) {
+							System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Login Success ID :" + id);
+							// Login Token을 포함해 성공했다고 Client에 알림
+							HashMap<String, String> loginSuccessMap = new HashMap<>();
+							loginSuccessMap.put("authToken", loginToken);
+							String loginSuccessJson = Util.createResponseJSON(200, loginSuccessMap);
+							out.println(loginSuccessJson);
+							break;
+						}
+						// 생성 실패시 실패한 것을 Client에 알림
+						else {
+							System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Login Failed!");
+							out.println(Util.createSingleKeyValueJSON(403, "msg", "Login Failed") + "\n");
+						}
 					}
+					// 이상한 Request라면 유효하지 않다고 보냄
 					else {
-						out.print(Util.createSingleKeyValueJSON(500, "msg", "Not Valided Request!"));
+						System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Not Valid Request.");
+						out.println(Util.createSingleKeyValueJSON(400, "msg", "Not Valid Request!") + "\n");
 					}
-					
-					break;
 				}
-				
-				// 여기서부터 계정 체크 해야함
-					
 			} catch (Exception e) {
+				out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error") + "\n");
 				System.out.println("Login Server Error! " + e.getMessage());
 			}
 		}

@@ -12,12 +12,12 @@ public class ServerMain {
 		
 		try (ServerSocket listener = new ServerSocket(21325)) {
 			// 서버 시작 알림 Print
-			System.out.println("User Server Starting....");
+			System.out.println("Login Server Starting....");
 			while (true) {
 				loginServerPool.execute(new LoginServer.loginServerHandler(listener.accept()));
 			}
 		} catch (Exception e) {
-			System.out.println("User Server Start Failed! - " + e.getMessage());
+			System.out.println("Login Server Start Failed! - " + e.getMessage());
 		}	
 	}
 }
