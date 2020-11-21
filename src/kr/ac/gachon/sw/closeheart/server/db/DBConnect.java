@@ -1,16 +1,22 @@
 package kr.ac.gachon.sw.closeheart.server.db;
 
+import kr.ac.gachon.sw.closeheart.server.User;
+import kr.ac.gachon.sw.closeheart.server.util.Util;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Random;
 
 public class DBConnect {
 	/* 유저 생성 함수
 	 * @author Minjae Seon
-	 * @param email String 
-	 * @param password String
-	 * @param nickName String
+	 * @param email 이메일 주소
+	 * @param password 패스워드 (암호화)
+	 * @param nickName 닉네임
 	 * @return boolean
 	 */
 	public static boolean createUser(String email, String password, String nickName) {
@@ -30,8 +36,8 @@ public class DBConnect {
 	
 	/* 로그인 함수
 	 * @author Taehyun Park
-	 * @param email String 
-	 * @param password String
+	 * @param email 이메일 주소
+	 * @param password 패스워드 (암호화)
 	 * @return boolean
 	 */
 	public static boolean loginMatchUser(String email, String password) {
@@ -53,8 +59,6 @@ public class DBConnect {
 			// SQL Select Query 전송
 			rs = DBManager.selectQuery(dbConnection, "account", attrList, conditionList);
 			if (rs.next()) {
-				String user_email = rs.getString("user_mail");
-				String user_pw = rs.getString("user_pw");
 				return true;
 			}
 		} catch (Exception e) {
@@ -62,5 +66,4 @@ public class DBConnect {
 		}
 		return false;
 	}
-
 }
