@@ -93,4 +93,16 @@ public class Util {
 		// 인증에 실패하면 null
 		else return null;
 	}
+
+	/*
+	 * 로그용 String 생성
+	 * @author Minjae Seon
+	 * @param tag 태그
+	 * @param pw 유저 IP
+	 * @param msg 메시지
+	 * @return Log 문자
+	 */
+	public static String createLogString(String tag, String IP, String msg) {
+		return "[" + tag + "][" + IP + "] " + msg;
+	}
 }
