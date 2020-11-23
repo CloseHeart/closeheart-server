@@ -1,10 +1,11 @@
 package kr.ac.gachon.sw.closeheart.server;
 
 import java.io.PrintWriter;
+import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -14,17 +15,36 @@ import com.google.gson.JsonParser;
 import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
 import kr.ac.gachon.sw.closeheart.server.util.Util;
 
-public class LoginServer {
+public class LoginServer extends Thread {
+	private int port;
+	public LoginServer(int port) {
+		this.port = port;
+	}
+
+	@Override
+	public void run() {
+		// Login Server 가동
+		ExecutorService loginServerPool = Executors.newFixedThreadPool(1000);
+
+		try (ServerSocket listener = new ServerSocket(port)) {
+			// 서버 시작 알림 Print
+			System.out.println("Login Server Starting....");
+			while (true) {
+				loginServerPool.execute(new loginServerHandler(listener.accept()));
+			}
+		} catch (Exception e) {
+			System.out.println("Login Server Start Failed! - " + e.getMessage());
+		}
+	}
+
 	/*
 	 * Login Server Thread Handler
 	 * @author Minjae Seon
-	 * @description Login 처리를 할 Thread Handler - Login Server는 유저의 입력만을 처리하면 되므로 I/O만 잘 처리하면 됨
 	 */
 	public static class loginServerHandler implements Runnable {
 		private Socket socket;
 		private Scanner in;
 		private PrintWriter out;
-		private User user;
 
 		public loginServerHandler(Socket socket) {
 			this.socket = socket;
@@ -32,7 +52,7 @@ public class LoginServer {
 
 		public void run() {
 			try {
-				System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Connected");
+				System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Connected"));
 				in = new Scanner(socket.getInputStream());
 				out = new PrintWriter(socket.getOutputStream(), true);
 
@@ -47,7 +67,7 @@ public class LoginServer {
 					if(!clientJson.isJsonNull()) {
 						int requestCode = clientJson.get("requestCode").getAsInt();
 						if(requestCode == 100) {
-							System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Login Request");
+							System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Login Request"));
 							// 함께 담긴 id / pw 값을 얻음
 							String id = clientJson.get("id").getAsString();
 							String pw = clientJson.get("pw").getAsString();
@@ -57,24 +77,42 @@ public class LoginServer {
 
 							// LoginToken이 생성되었다면
 							if (loginToken != null) {
-								System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Login Success! Login ID : " + id);
-								// Login Token을 포함해 성공했다고 Client에 알림
-								HashMap<String, String> loginSuccessMap = new HashMap<>();
-								loginSuccessMap.put("authToken", loginToken);
-								loginSuccessMap.put("mainServerPort", ""); // 메인 서버 포트를 알려줘 메인 서버로 연결을 유도
-								String loginSuccessJson = Util.createResponseJSON(200, loginSuccessMap);
-								out.println(loginSuccessJson);
-								break;
+								// 토큰 만료 시간 기록 (6시간)
+								Calendar cal = Calendar.getInstance();
+								cal.add(Calendar.HOUR_OF_DAY, 6);
+
+								// 세션 정보를 DB에 기록, 생성 여부를 리턴받음
+								boolean isSessionCreated = DBConnect.writeSession(id, loginToken, socket.getInetAddress().getHostAddress(), cal);
+
+								// 세션이 잘 생성된 경우
+								if (isSessionCreated) {
+									System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Login Success! ID : " + id));
+									// Login Token을 포함해 성공했다고 Client에 알림
+									HashMap<String, String> loginSuccessMap = new HashMap<>();
+									loginSuccessMap.put("authToken", loginToken);
+									loginSuccessMap.put("mainServerPort", String.valueOf(ServerMain.friendServerPort)); // 메인 (친구) 서버 포트를 알려줘 메인 서버로 연결을 유도
+									String loginSuccessJson = Util.createResponseJSON(200, loginSuccessMap);
+									out.println(loginSuccessJson);
+									out.close();
+									in.close();
+									socket.close();
+									break;
+								}
+								// 세선 생성 실패시
+								else {
+									System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Session Create Failed!"));
+									out.println(Util.createSingleKeyValueJSON(500, "msg", "Session Create Failed") + "\n");
+								}
 							}
 							// 생성 실패시 실패한 것을 Client에 알림
 							else {
-								System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Login Failed!");
+								System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Login Failed!"));
 								out.println(Util.createSingleKeyValueJSON(401, "msg", "Login Failed") + "\n");
 							}
 						}
 						/* 아이디 중복 체크 처리*/
 						else if(requestCode == 101) {
-							System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] ID Check Request");
+							System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "ID Check Request"));
 
 							// ID 부분을 가져옴
 							String ID = clientJson.get("id").getAsString();
@@ -94,7 +132,7 @@ public class LoginServer {
 						}
 						/* 이메일 중복 체크 처리 */
 						else if(requestCode == 102) {
-							System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Email Check Request");
+							System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Email Check Request"));
 
 							// ID 부분을 가져옴
 							String email = clientJson.get("email").getAsString();
@@ -115,7 +153,7 @@ public class LoginServer {
 						}
 						/* 닉네임 중복 체크 처리 */
 						else if(requestCode == 103) {
-							System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Nickname Check Request");
+							System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "NickName Check Request"));
 
 							// 닉네임 부분을 가져옴
 							String nick = clientJson.get("nick").getAsString();
@@ -135,7 +173,7 @@ public class LoginServer {
 						}
 						/* 회원 가입 처리 */
 						else if(requestCode == 104) {
-							System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Register Request");
+							System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Register Request"));
 
 							// 가입 정보를 가져옴
 							String id = clientJson.get("id").getAsString();
@@ -154,11 +192,11 @@ public class LoginServer {
 
 								// 생성되었으면 200 (정상), 실패했으면 서버 문제이므로 500
 								if(isCreated) {
-									System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Register Success");
+									System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Register Success"));
 									out.println(Util.createSingleKeyValueJSON(200, "msg", "Register Success") + "\n");
 								}
 								else {
-									System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Register Failed!");
+									System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Register Failed!"));
 									out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error") + "\n");
 								}
 							}
@@ -168,18 +206,18 @@ public class LoginServer {
 						}
 						/* 알 수 없는 Request Code 처리 */
 						else {
-							System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Not Valid Request!");
+							System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Not Valid Request!"));
 							out.println(Util.createSingleKeyValueJSON(400, "msg", "Not Valid Request!") + "\n");
 						}
 					}
 					// Json이 비어있는 Request라면 유효하지 않다고 보냄
 					else {
-						System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "] Not Valid Request!");
+						System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Not Valid Request!"));
 						out.println(Util.createSingleKeyValueJSON(400, "msg", "Not Valid Request!") + "\n");
 					}
 				}
 			} catch (Exception e) {
-				out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error") + "\n");
+				if(out != null) out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error") + "\n");
 				System.out.println("Login Server Error! " + e.getMessage());
 			}
 		}

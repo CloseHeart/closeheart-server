@@ -3,8 +3,7 @@ package kr.ac.gachon.sw.closeheart.server.db;
 import kr.ac.gachon.sw.closeheart.server.User;
 import kr.ac.gachon.sw.closeheart.server.util.Util;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
+import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -158,6 +157,50 @@ public class DBConnect {
 			if (rs.next()) {
 				return true;
 			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	/*
+	 * 유저 세션 정보 DB 입력
+	 * @author Minjae Seon
+	 * @param id 유저 ID
+	 * @param token 유저 토큰
+	 * @param timeInfo 만료 시간 정보를 담은 Calendar
+	 * @return DB 쓰기 성공 여부
+	 */
+	public static boolean writeSession(String id, String token, String IP, Calendar expiredTimeInfo) {
+		Connection dbConnection;
+		try {
+			// DB 연결 수립
+			dbConnection = DBManager.getDBConnection();
+
+			// PreparedStatement 이용 Insert
+			// Timestamp 기록을 위함
+			PreparedStatement sessionStatement = dbConnection.prepareStatement("INSERT INTO session (user_id, token, clientIP, expiredTime) values (?, ?, ?, ?)");
+			sessionStatement.setString(1, id); // ID
+			sessionStatement.setString(2, token); // 토큰
+			sessionStatement.setString(3, IP); // IP주소
+			sessionStatement.setTimestamp(4, new Timestamp(expiredTimeInfo.getTimeInMillis())); // 만료시간
+			// 전송
+			int result = sessionStatement.executeUpdate();
+
+			// 1개 이상의 결과가 있다면 true, 아니라면 false
+			return result >= 1;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+	public static boolean isValidToken(String token) {
+		Connection dbConnection;
+		try {
+			// DB 연결 수립
+			dbConnection = DBManager.getDBConnection();
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
