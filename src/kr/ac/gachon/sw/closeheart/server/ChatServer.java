@@ -95,6 +95,7 @@ public class ChatServer extends Thread {
 					 - 함께 첨부 될 내용 - 토큰
 					 Example JSON - {requestCode:212, token:"토큰"}
 
+					-- Server To Client --
 					클라이언트의 입장 요청을 받고 처리하는 방법 (requestCode 210)
 					 - type에는 join, user에는 들어온 유저 닉네임을 담고 모든 유저에게 전송
 					 Example JSON - {"type":"join", "user":"들어온 유저 닉네임"}
