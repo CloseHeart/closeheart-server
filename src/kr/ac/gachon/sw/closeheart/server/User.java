@@ -1,14 +1,15 @@
 package kr.ac.gachon.sw.closeheart.server;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 
 public class User {
 	private String userAuthToken;
+	private String ID;
 	private String userNickname;
 	private JsonArray userFriends;
 
-	public User(String userAuthToken, String userNickname) {
+	public User(String ID, String userAuthToken, String userNickname) {
+		this.ID = ID;
 		this.userAuthToken = userAuthToken;
 		this.userNickname = userNickname;
 	}

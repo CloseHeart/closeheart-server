@@ -1,13 +1,18 @@
   
 package kr.ac.gachon.sw.closeheart.server;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import kr.ac.gachon.sw.closeheart.server.util.Util;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ChatServer {
+public class ChatServer extends Thread {
+	private int port;
 
 	private static Set<String> names = new HashSet<>();
 	private static Set<PrintWriter> writers = new HashSet<>();
@@ -17,11 +22,17 @@ public class ChatServer {
 	private static HashMap<Integer, PrintWriter> map = new HashMap<>();	// 클라이언트 + outStream
 	private static HashMap<Integer, Boolean> isOnline = new HashMap<>();	// 클라이언트 + state
 
-	public static void main(String[] args) throws Exception {
-		System.out.println("The chat server is running...");
+	public ChatServer(int port) {
+		this.port = port;
+	}
+
+	@Override
+	public void run() {
+			/*
+			System.out.println("The chat server is running...");
 		Scanner keyborad = new Scanner(System.in);
 		ServerSocket servercocket = null;
-		Socket socekt =  null;
+		Socket socekt = null;
 		String fileName = "input.txt";
 
 		try{
@@ -40,85 +51,79 @@ public class ChatServer {
 		finally {
 			System.out.println("End of ChatServer");
 		}
-		/*
-		ExecutorService pool = Executors.newFixedThreadPool(500);
-		try (ServerSocket listener = new ServerSocket(59001)) {
+		 */
+
+		// Chat Server Thread 시작
+		ExecutorService pool = Executors.newFixedThreadPool(1000);
+		try (ServerSocket listener = new ServerSocket(port)) {
+			System.out.println("Chat Server Starting....");
 			while (true) {
-				pool.execute(new Handler(listener.accept()));
+				pool.execute(new ChatHandler(listener.accept()));
 			}
+		} catch (Exception e) {
+			System.out.println("Chat Server Start Failed! - " + e.getMessage());
 		}
-		*/
 	}
 
-	private static class Handler implements Runnable {
-		private String name;
+	private static class ChatHandler implements Runnable {
 		private Socket socket;
+		private String nickName;
+
 		private Scanner in;
 		private PrintWriter out;
-		private boolean state; // 현재 접속 해 있는 지, 없는 지
 
-		private int in_number; // 몇 번째로 들어온 client인지
-
-		public Handler(Socket socket) {
+		public ChatHandler(Socket socket) {
 			this.socket = socket;
-			in_number = memberCnt;	// 해당 클라이언트 number
-			memberCnt++;
 		}
 
 		public void run() {
 			try {
-				
 				in = new Scanner(socket.getInputStream());
 				out = new PrintWriter(socket.getOutputStream(), true);
 
-				// name =
-				// db에서 읽어옴
-				
-				this.state = true;
-				map.put(in_number, out);
-				isOnline.put(in_number, state);
+				/*
+					Chatting Protocol
 
-				while(memberCnt % 2 != 0);	// 최소 1명 이상의 대화 상대가 있어야 while 탈출
-				
-				if(in_number % 2 == 0) {	// 짝수 (대화 상대가 먼저 들어온 경우)
-					if(isOnline.get(in_number - 1)) {	// 상대방이 온라인이면,
-						out = map.get(in_number - 1);
-					}
-					
-				} else {	// 홀수 (대화 상대가 바로 다음에 들어온 경우)
-					if (in_number + 1 <= memberCnt && isOnline.get(in_number + 1)) {
-						// 상대방이 온라인이면
-						out = map.get(in_number + 1);
-					}
+					-- Client To Server --
+					requestCode 210 - 채팅방 입장
+					 - 함께 첨부 될 내용 : 토큰, 닉네임 (nickName String에 저장하시면 됩니다.)
+					 Example JSON - {requestCode:210, token:"토큰", nickName:"닉네임"}
+					requestCode 211 - 채팅 메시지 전송
+					 - 함께 첨부 될 내용 : 토큰, 메시지 내용
+					 Example JSON - {requestCode:211, token:"토큰", msg:"하이"}
+					requestCode 212 - 채팅방 나가기
+					 - 함께 첨부 될 내용 - 토큰
+					 Example JSON - {requestCode:212, token:"토큰"}
+
+					-- Server To Client --
+					클라이언트의 입장 요청을 받고 처리하는 방법 (requestCode 210)
+					 - type에는 join, user에는 들어온 유저 닉네임을 담고 모든 유저에게 전송
+					 Example JSON - {"type":"join", "user":"들어온 유저 닉네임"}
+
+					클라이언트의 채팅 메시지를 받고 모든 유저에게 채팅 메시지를 전송하는 방법 (requestCode 211)
+					 - type에는 message, user에는 전송 유저 닉네임, msg에는 Client에게서 넘어오는 메시지를 담고 모든 유저에게 전송
+					 Example JSON - {"type":"message", "user":"전송 유저 닉네임", "msg":"메시지 내용"}
+
+					클라이언트의 퇴장 요청을 받고 처리하는 방법 (requestCode 212)
+					 - type에는 exit, user에는 나간 유저 닉네임을 담고 모든 유저에게 전송
+					 Example JSON - {"type":"exit", "user":"나간 유저 닉네임"}
+
+					 토큰 관련 처리는 나중에 다른 Class와 함께 추가 예정 - 일단은 채팅 주고받을 수 있도록 구현이 우선!
+				 */
+
+				// 유저 인풋 처리
+				while(in.hasNextLine()) {
+					String userInput = in.nextLine();
+					if(userInput.isEmpty()) userInput = in.nextLine();
+
+					// 유저에게서 받은 JSON
+					JsonObject userJson = JsonParser.parseString(userInput).getAsJsonObject();
 				}
-				
-				// Accept messages from this client and broadcast them.
-				while (true) {
-					
-					String input = in.nextLine(); // 클라이언트로 부터,
-					if (input.toLowerCase().startsWith("/quit")) {	// 채팅 끝
-						return;
-					}
-					
-					out.println(input);
-				}
-				
+
+
 			} catch (Exception e) {
-				System.out.println(e);
-			} finally {
-				if (out != null) {
-					writers.remove(out);
-				}
-				if (name != null) {
-					state = false;
-					isOnline.remove(in_number);
-					isOnline.put(in_number, state);
-					names.remove(name);
-				}
-				try {
-					socket.close();
-				} catch (IOException e) {
-				}
+				if(out != null) out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error"));
+				System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Server Error - " + e.getMessage()));
 			}
 		}
 	}
