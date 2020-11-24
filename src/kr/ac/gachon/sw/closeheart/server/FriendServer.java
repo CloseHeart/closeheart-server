@@ -2,6 +2,7 @@ package kr.ac.gachon.sw.closeheart.server;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
 import kr.ac.gachon.sw.closeheart.server.util.Util;
 
 import java.io.PrintWriter;
@@ -68,7 +69,13 @@ public class FriendServer extends Thread {
 
                     }
                     else {
-
+                        int requestCode = jsonObject.get("requestCode").getAsInt();
+                        /* 로그아웃 처리 */
+                        if(requestCode == 300) {
+                            String userToken = jsonObject.get("token").getAsString();
+                            boolean result = DBConnect.removeToken(userToken, socket.getInetAddress().getHostAddress());
+                            System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Logout - Token Delete : " + result));
+                        }
                     }
                 }
             }
