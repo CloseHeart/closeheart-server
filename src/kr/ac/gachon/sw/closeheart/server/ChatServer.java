@@ -8,19 +8,17 @@ import kr.ac.gachon.sw.closeheart.server.util.Util;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.HashSet;
+import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ChatServer extends Thread {
 	private int port;
+	private static Set<PrintWriter> writers = new HashSet<>();	// 모든 writer
 
-	private static Set<String> names = new HashSet<>();
-	private static Set<PrintWriter> writers = new HashSet<>();
-
-	private static int memberCnt = 1;	// 순서 대로 들어온 클라이언트끼리 대화 하도록, 클라이언트의 숫자를 카운트
-
-	private static HashMap<Integer, PrintWriter> map = new HashMap<>();	// 클라이언트 + outStream
-	private static HashMap<Integer, Boolean> isOnline = new HashMap<>();	// 클라이언트 + state
+	private static HashMap<String, PrintWriter> mapOut = new HashMap<>();	// userToken + outStream
+	private static HashMap<String, String> mapNic = new HashMap<>();	// userToekn + userNicName
 
 	public ChatServer(int port) {
 		this.port = port;
@@ -118,9 +116,100 @@ public class ChatServer extends Thread {
 
 					// 유저에게서 받은 JSON
 					JsonObject userJson = JsonParser.parseString(userInput).getAsJsonObject();
+
+					/*Chatting*/
+					// JSON이 Null이 아니고
+					if(!userJson.isJsonNull()){
+						int requestCode = userJson.get("requestCode").getAsInt();
+						/* 채팅방 입장 */
+						if(requestCode == 210){
+							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Enter Chat Room Request"));
+							// 함께 담긴 nicName과 token 얻음
+							String userNic = userJson.get("nickName").getAsString();
+							String userToken = userJson.get("token").getAsString();
+
+							JsonObject toUser = new JsonObject();
+							toUser.addProperty("type","join");
+							toUser.addProperty("user",userNic);
+
+							// 모든 친구들에게 JSONobj 전송
+							for (PrintWriter writer : writers) {
+								writer.println(toUser);
+							}
+
+							// hashset에 out추가
+							writers.add(out)
+							mapOut.put(userToken, out);	// hashmap에 Usertoken, out추가
+							mapNic.put(userToken, userNic) // hashap에 UserToken, UserNic 추가
+
+							if(!writers.contains(out) && mapNic.get(userToken) == null){
+								System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Enter Chat Room Failed!"));
+							}
+							if(mapOut.get(userToken) == null) {}
+							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Enter Chat Room Success!"));
+
+						}
+						/* 채팅 메세지 전송 */
+						else if(requestCode == 211){
+							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Msg Send Request"));
+							// 함께 담긴 메세지와 token 얻음
+							String userMsg = userJson.get("msg").getAsString();
+							String userToken = userJson.get("token").getAsString();
+
+							JsonObject toUser = new JsonObject();
+							toUser.addProperty("type","message");
+							toUser.addProperty("user",mapNic.get(userToken));
+							toUser.addProperty("msg",userMsg);
+
+							// 1:1 채팅 기능
+							// 모든 친구들에게 JSONobj 전송
+							for (PrintWriter writer : writers) {
+								writer.println(toUser);
+							}
+							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Msg Send Success!"));
+						}
+						/* 채팅방 나가기 */
+						else if(requestCode == 212){
+							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Exit Chat Room Request"));
+							// 함께 담긴 token 얻음
+							String userToken = userJson.get("token").getAsString();
+
+							JsonObject toUser = new JsonObject();
+							toUser.addProperty("type","exit");
+							toUser.addProperty("user",mapNic.get(userToken));
+
+							writers.remove(out);	// HashSet에서 outStream 제거
+							mapNic.remove(userToken);	// HashMap에서 해당 유저 제거
+							mapOut.remove(userToken);
+
+							if(writers.contains(out) && mapNic.get(userToken) != null){
+								System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Exit Chat Room Failed!"));
+							}
+							if(mapOut.get(userToken) != null) {}
+
+							// 모든 친구들에게 JSONobj 전송
+							for (PrintWriter writer : writers) {
+								writer.println(toUser);
+							}
+							try{
+								socket.close();
+							}
+							catch(Exception e){
+							}
+							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Exit Chat Room Success!"));
+						}
+						/* 알 수 없는 Request Code 처리 */
+						else{	//
+							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Not Valid Request!"));
+							out.println(Util.createSingleKeyValueJSON(400, "msg", "Not Valid Request!") + "\n");
+						}
+					}
+					// Json이 비어있는 Request라면 유효하지 않다고 보냄
+					else{
+						System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Not Valid Request!"));
+						out.println(Util.createSingleKeyValueJSON(400, "msg", "Not Valid Request!") + "\n");
+					}
 				}
-
-
 			} catch (Exception e) {
 				if(out != null) out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error"));
 				System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Server Error - " + e.getMessage()));
