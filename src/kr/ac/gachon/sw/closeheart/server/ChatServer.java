@@ -138,9 +138,9 @@ public class ChatServer extends Thread {
 							}
 
 							// hashset에 out추가
-							writers.add(out)
+							writers.add(out);
 							mapOut.put(userToken, out);	// hashmap에 Usertoken, out추가
-							mapNic.put(userToken, userNic) // hashap에 UserToken, UserNic 추가
+							mapNic.put(userToken, userNic); // hashap에 UserToken, UserNic 추가
 
 							if(!writers.contains(out) && mapNic.get(userToken) == null){
 								System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Enter Chat Room Failed!"));
