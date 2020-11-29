@@ -13,7 +13,7 @@ public class ServerMain {
 		FriendServer friendServer = new FriendServer(friendServerPort);
 
 		// 채팅 서버 Thread
-		ChatServer chatServer = new ChatServer(21327);
+		ChatServer chatServer = new ChatServer(chatServerPort);
 
 		loginServer.start();
 		friendServer.start();

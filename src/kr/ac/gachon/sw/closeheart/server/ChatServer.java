@@ -92,6 +92,8 @@ public class ChatServer extends Thread {
 					requestCode 212 - 채팅방 나가기
 					 - 함께 첨부 될 내용 - 토큰
 					 Example JSON - {requestCode:212, token:"토큰"}
+					requestCode 213 - 파일 전송 요청
+					 - 함께 첨부 될 내용 - 토큰, 
 
 					-- Server To Client --
 					클라이언트의 입장 요청을 받고 처리하는 방법 (requestCode 210)
@@ -120,7 +122,7 @@ public class ChatServer extends Thread {
 					/*Chatting*/
 					// JSON이 Null이 아니고
 					if(!userJson.isJsonNull()){
-						int requestCode = userJson.get("requestCode").getAsInt();
+						int requestCode = userJson.get("code").getAsInt();
 						/* 채팅방 입장 */
 						if(requestCode == 210){
 							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Enter Chat Room Request"));
@@ -138,9 +140,9 @@ public class ChatServer extends Thread {
 							}
 
 							// hashset에 out추가
-							writers.add(out)
+							writers.add(out);
 							mapOut.put(userToken, out);	// hashmap에 Usertoken, out추가
-							mapNic.put(userToken, userNic) // hashap에 UserToken, UserNic 추가
+							mapNic.put(userToken, userNic); // hashap에 UserToken, UserNic 추가
 
 							if(!writers.contains(out) && mapNic.get(userToken) == null){
 								System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Enter Chat Room Failed!"));
