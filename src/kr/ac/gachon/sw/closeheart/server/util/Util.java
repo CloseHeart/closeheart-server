@@ -22,7 +22,7 @@ public class Util {
 	 */
 	public static String createJSON(int code, HashMap<String, String> elements) {
 		JsonObject json = new JsonObject();
-		json.addProperty("responseCode", code);
+		json.addProperty("code", code);
 
 		Iterator<String> keyIterator = elements.keySet().iterator();
 
@@ -44,7 +44,7 @@ public class Util {
 	 */
 	public static String createSingleKeyValueJSON(int code, String key, String value) {
 		JsonObject json = new JsonObject();
-		json.addProperty("responseCode", code);
+		json.addProperty("code", code);
 		json.addProperty(key, value);
 		return json.toString();
 	}
