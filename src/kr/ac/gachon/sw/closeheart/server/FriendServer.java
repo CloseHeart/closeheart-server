@@ -62,16 +62,21 @@ public class FriendServer extends Thread {
                     if(clientRequest.isEmpty()) clientRequest = in.nextLine();
 
                     JsonObject jsonObject = JsonParser.parseString(clientRequest).getAsJsonObject();
+                    int requestCode = jsonObject.get("code").getAsInt();
 
                     // User가 null인 경우에는 User 정보를 먼저 받아와야 함
                     // Token을 이용해 user_id를 불러오고, 이를 이용해서 friend 테이블의 정보를 받아와야 함
-                    if(user == null) {
 
+                    if(user == null) {
+                        /* Friend 서버 최초 접근시 Login 처리 */
+                        if(requestCode == 300) {
+                            String userToken = jsonObject.get("token").getAsString();
+
+                        }
                     }
                     else {
-                        int requestCode = jsonObject.get("requestCode").getAsInt();
                         /* 로그아웃 처리 */
-                        if(requestCode == 300) {
+                        if(requestCode == 301) {
                             String userToken = jsonObject.get("token").getAsString();
                             boolean result = DBConnect.removeToken(userToken, socket.getInetAddress().getHostAddress());
                             System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Logout - Token Delete : " + result));

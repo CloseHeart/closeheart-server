@@ -65,7 +65,7 @@ public class LoginServer extends Thread {
 					/* 로그인 요청 처리 */
 					// JSON이 Null이 아니고 요청 코드가 100이라면
 					if(!clientJson.isJsonNull()) {
-						int requestCode = clientJson.get("requestCode").getAsInt();
+						int requestCode = clientJson.get("code").getAsInt();
 						if(requestCode == 100) {
 							System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Login Request"));
 							// 함께 담긴 id / pw 값을 얻음
@@ -91,7 +91,7 @@ public class LoginServer extends Thread {
 									HashMap<String, String> loginSuccessMap = new HashMap<>();
 									loginSuccessMap.put("authToken", loginToken);
 									loginSuccessMap.put("mainServerPort", String.valueOf(ServerMain.friendServerPort)); // 메인 (친구) 서버 포트를 알려줘 메인 서버로 연결을 유도
-									String loginSuccessJson = Util.createResponseJSON(200, loginSuccessMap);
+									String loginSuccessJson = Util.createJSON(200, loginSuccessMap);
 									out.println(loginSuccessJson);
 									out.close();
 									in.close();
