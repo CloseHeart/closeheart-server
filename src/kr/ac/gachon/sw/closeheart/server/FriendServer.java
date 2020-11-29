@@ -74,13 +74,17 @@ public class FriendServer extends Thread {
 
                         }
                     }
+                    // User 정보가 있을 경우 처리
                     else {
-                        /* 로그아웃 처리 */
-                        if(requestCode == 301) {
-                            String userToken = jsonObject.get("token").getAsString();
-                            boolean result = DBConnect.removeToken(userToken, socket.getInetAddress().getHostAddress());
-                            System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Logout - Token Delete : " + result));
-                        }
+
+                    }
+
+                    /* 로그아웃 처리 */
+                    if(requestCode == 301) {
+                        String userToken = jsonObject.get("token").getAsString();
+                        boolean result = DBConnect.removeToken(userToken, socket.getInetAddress().getHostAddress());
+                        out.println(Util.createSingleKeyValueJSON(301, "msg", "logout"));
+                        System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Logout - Token Delete : " + result));
                     }
                 }
             }
