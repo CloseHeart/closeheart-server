@@ -9,20 +9,20 @@ public class User {
 	private boolean isOnline;
 
 	// 토큰 포함 본인 유저 정보
+	public User(String userToken, String userID, String userNick, String userMsg, User[] friends) {
+		this.userToken = userToken;
+		this.userID = userID;
+		this.userNick = userNick;
+		this.userMsg = userMsg;
+		this.friends = friends;
+	}
+
+	// 친구에 담을 유저 정보
 	public User(String userID, String userNick, String userMsg, boolean isOnline) {
 		this.userID = userID;
 		this.userNick = userNick;
 		this.userMsg = userMsg;
 		this.isOnline = isOnline;
-	}
-
-	// 친구에 담을 유저 정보
-	public User(String userToken, User[] friends, String userID, String userNick, String userMsg) {
-		this.userID = userID;
-		this.friends = friends;
-		this.userNick = userNick;
-		this.userMsg = userMsg;
-		this.userToken = userToken;
 	}
 
 	public String getUserToken() {
