@@ -1,32 +1,59 @@
 package kr.ac.gachon.sw.closeheart.server;
 
-import com.google.gson.JsonArray;
-
 public class User {
-	private String userAuthToken;
-	private String ID;
-	private String userNickname;
-	private JsonArray userFriends;
+	private String userToken;
+	private String userID;
+	private String userNick;
+	private String userMsg;
+	private User[] friends;
+	private boolean isOnline;
 
-	public User(String ID, String userAuthToken, String userNickname) {
-		this.ID = ID;
-		this.userAuthToken = userAuthToken;
-		this.userNickname = userNickname;
+	// 토큰 포함 본인 유저 정보
+	public User(String userID, String userNick, String userMsg, boolean isOnline) {
+		this.userID = userID;
+		this.userNick = userNick;
+		this.userMsg = userMsg;
+		this.isOnline = isOnline;
+	}
+
+	// 친구에 담을 유저 정보
+	public User(String userToken, User[] friends, String userID, String userNick, String userMsg) {
+		this.userID = userID;
+		this.friends = friends;
+		this.userNick = userNick;
+		this.userMsg = userMsg;
+		this.userToken = userToken;
 	}
 
 	public String getUserToken() {
-		return userAuthToken;
+		return userToken;
 	}
 
-	public String getUserNickname() {
-		return userNickname;
+	public String getUserID() {
+		return userID;
 	}
 
-	public JsonArray getUserFriends() {
-		return getUserFriends();
+	public String getUserNick() {
+		return userNick;
 	}
 
-	public void setUserFriends(JsonArray friendJsonArray) {
-		this.userFriends = friendJsonArray;
+	public String getUserMsg() {
+		return userMsg;
+	}
+
+	public User[] getFriends() { return friends; }
+
+	public boolean getOnline() {
+		return isOnline;
+	}
+
+	public void setUserMsg(String userMsg) {
+		this.userMsg = userMsg;
+	}
+
+	public void setFriends(User[] friends) { this.friends = friends; }
+
+	public void setOnline(boolean isOnline) {
+		this.isOnline = isOnline;
 	}
 }
