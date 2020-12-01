@@ -1,5 +1,6 @@
 package kr.ac.gachon.sw.closeheart.server.db;
 
+import javax.xml.transform.Result;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -110,7 +111,7 @@ public class DBManager {
 	 * @throw SQLException
 	 */
 	public static ResultSet selectQuery(Connection connection, String tableName, ArrayList<String> attributeName, HashMap<String, Object> condition) throws SQLException {
-		Statement sm = connection.createStatement();
+		Statement sm = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
 		
 		StringBuilder strBuilder = new StringBuilder();
 		strBuilder.append("select ");
@@ -147,7 +148,9 @@ public class DBManager {
 			}
 			// Condition이 비었다면 ;로 마무리
 			else strBuilder.append(";");
-			
+
+			System.out.println(strBuilder.toString());
+
 			// 만든 Query문을 Execute함
 			return sm.executeQuery(strBuilder.toString());
 		}

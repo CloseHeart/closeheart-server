@@ -84,6 +84,7 @@ public class DBConnect {
 			// 가져올 Attribute List
 			ArrayList<String> attrList = new ArrayList<String>();
 			attrList.add("user_id");
+			attrList.add("expiredTime");
 			
 			// Condition HashMap
 			HashMap<String, Object> conditionList = new HashMap<String, Object>();
@@ -92,6 +93,10 @@ public class DBConnect {
 			// SQL Select Query 전송
 			rs = DBManager.selectQuery(dbConnection, "session", attrList, conditionList);
 			if (rs.next()) {
+				// 만료체크
+				Timestamp expiredTime = rs.getTimestamp("expiredTime");
+				if(expiredTime.getTime() < System.currentTimeMillis()) return null;
+				rs.beforeFirst();
 				return rs;
 			}
 		} catch (Exception e) {
@@ -114,7 +119,6 @@ public class DBConnect {
 			// 가져올 Attribute List
 			ArrayList<String> attrList = new ArrayList<String>();
 			attrList.add("user_mail");
-			attrList.add("user_pw");
 			attrList.add("user_nick");
 			attrList.add("user_birthday");
 			attrList.add("user_statusmsg");
@@ -125,6 +129,7 @@ public class DBConnect {
 			// SQL Select Query 전송
 			rs = DBManager.selectQuery(dbConnection, "account", attrList, conditionList);
 			if (rs.next()) {
+				rs.beforeFirst();
 				return rs;
 			}
 		} catch (Exception e) {
