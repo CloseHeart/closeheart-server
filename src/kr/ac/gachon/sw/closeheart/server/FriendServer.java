@@ -85,7 +85,7 @@ public class FriendServer extends Thread {
                             	if (rs_session.next())
                     				user_id = rs_session.getString(1);
                             }
-                            // 얻어온 값으로 account 조회해서  모든 user info값 user객체에 저장하는 것까지 일단 처리
+                            // 얻어온 값으로 account 조회해서  모든 user info값 user객체에 저장
                             ResultSet rs_account = DBConnect.AccessAccountWithId(user_id);
                             if(rs_account != null) {
                             	if (rs_account.next()) {
@@ -96,10 +96,10 @@ public class FriendServer extends Thread {
 	                            	user_statusmsg = rs_account.getString(5);
                             	}
                             }
-                            user = new User();
+                            user = new User(userToken, user_id,user_nick,user_statusmsg, null);
                         }
                     }
-                    // User 정보가 있을 경우 처리
+                    // User 정보가 있을 경우 처리 -- 추후에
                     else {
                     	
                     }
