@@ -149,7 +149,7 @@ public class DBManager {
 			// Condition이 비었다면 ;로 마무리
 			else strBuilder.append(";");
 
-			System.out.println(strBuilder.toString());
+			//System.out.println(strBuilder.toString());
 
 			// 만든 Query문을 Execute함
 			return sm.executeQuery(strBuilder.toString());
