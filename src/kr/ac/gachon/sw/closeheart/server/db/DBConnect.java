@@ -138,6 +138,37 @@ public class DBConnect {
 		return rs;
 	}
 
+	/* 존재하는 유저인지 체크
+	 * @author Minjae Seon
+	 * @param user_id 유저 아이디
+	 * @return boolean
+	 */
+	public static boolean isValidUser(String userID) {
+		Connection dbConnection;
+		ResultSet rs = null;
+		try {
+			dbConnection = DBManager.getDBConnection();
+
+			// 가져올 Attribute List
+			ArrayList<String> attrList = new ArrayList<String>();
+			attrList.add("user_id");
+
+			// Condition HashMap
+			HashMap<String, Object> conditionList = new HashMap<String, Object>();
+			conditionList.put("user_id", userID);
+
+			// SQL Select Query 전송
+			rs = DBManager.selectQuery(dbConnection, "account", attrList, conditionList);
+			if (rs.next()) {
+				return true;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+
 	/*
 	 * 아이디 중복 확인 함수
 	 * @author Minjae Seon
@@ -261,6 +292,38 @@ public class DBConnect {
 			e.printStackTrace();
 		}
 		return false;
+	}
+
+	/*
+	 * 유저 세션 정보 DB 입력
+	 * @author Minjae Seon
+	 * @param token 유저 토큰
+	 * @param requestID 요청 받을 유저 ID
+	 * @return DB 쓰기 성공 여부
+	 */
+	public static boolean requestFriend(String token, String requestID) throws Exception {
+		// 토큰으로 아이디 가져오기
+		String myID = null;
+		ResultSet getUserIDSQL = AccessSessionWithToken(token);
+		if (getUserIDSQL.next()) {
+			myID = getUserIDSQL.getString("user_id");
+		}
+		else return false;
+
+		Connection dbConnection;
+		// DB 연결 수립
+		dbConnection = DBManager.getDBConnection();
+
+		PreparedStatement sessionStatement = dbConnection.prepareStatement("INSERT INTO friend (user1_id, user2_id, type) values (?, ?, ?)");
+		sessionStatement.setString(1, myID); // 친구 요청을 보낸 유저 ID
+		sessionStatement.setString(2, requestID); // 요청을 받을 유저 ID
+		sessionStatement.setInt(3, 1); // 타입
+
+		// 전송
+		int result = sessionStatement.executeUpdate();
+
+		// 1개 이상의 결과가 있다면 true, 아니라면 false
+		return result >= 1;
 	}
 
 	/*
