@@ -69,6 +69,69 @@ public class DBConnect {
 		}
 		return false;
 	}
+	
+	/* 토큰이용해 세션테이블에 액세스하는 함수
+	 * @author Taehyun Park
+	 * @param token 토큰
+	 * @return ResultSet
+	 */
+	public static ResultSet AccessSessionWithToken(String token) {
+		Connection dbConnection;
+		ResultSet rs = null;
+		try {
+			dbConnection = DBManager.getDBConnection();
+			
+			// 가져올 Attribute List
+			ArrayList<String> attrList = new ArrayList<String>();
+			attrList.add("user_id");
+			
+			// Condition HashMap
+			HashMap<String, Object> conditionList = new HashMap<String, Object>();
+			conditionList.put("token", token);
+			
+			// SQL Select Query 전송
+			rs = DBManager.selectQuery(dbConnection, "session", attrList, conditionList);
+			if (rs.next()) {
+				return rs;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return rs;
+	}
+	
+	/* 유저 아이디를 이용해 계정 테이블에 액세스하는 함수
+	 * @author Taehyun Park
+	 * @param user_id 유저 아이디
+	 * @return ResultSet
+	 */
+	public static ResultSet AccessAccountWithId(String user_id) {
+		Connection dbConnection;
+		ResultSet rs = null;
+		try {
+			dbConnection = DBManager.getDBConnection();
+			
+			// 가져올 Attribute List
+			ArrayList<String> attrList = new ArrayList<String>();
+			attrList.add("user_mail");
+			attrList.add("user_pw");
+			attrList.add("user_nick");
+			attrList.add("user_birthday");
+			attrList.add("user_statusmsg");
+			// Condition HashMap
+			HashMap<String, Object> conditionList = new HashMap<String, Object>();
+			conditionList.put("user_id", user_id);
+			
+			// SQL Select Query 전송
+			rs = DBManager.selectQuery(dbConnection, "account", attrList, conditionList);
+			if (rs.next()) {
+				return rs;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return rs;
+	}
 
 	/*
 	 * 아이디 중복 확인 함수
