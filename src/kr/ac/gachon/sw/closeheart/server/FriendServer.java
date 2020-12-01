@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.ResultSet;
+import java.util.HashMap;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -59,7 +60,7 @@ public class FriendServer extends Thread {
                 while (in.hasNextLine()) {
                     // Client가 보낸 JSON을 받아서 JsonObject 형태로 변환
                     String clientRequest = in.nextLine();
-                    
+
                     // 비었으면 다음 줄 다시 받아오기
                     if(clientRequest.isEmpty()) clientRequest = in.nextLine();
 
@@ -73,30 +74,57 @@ public class FriendServer extends Thread {
                         /* Friend 서버 최초 접근시 Login 처리 */
                         if(requestCode == 300) {
                         	String user_id = null;
-                        	String user_pw = null;
                         	String user_mail = null;
                         	String user_nick = null;
                         	String user_birthday = null;
                         	String user_statusmsg = null;
                             String userToken = jsonObject.get("token").getAsString();
+
                             ResultSet rs_session = DBConnect.AccessSessionWithToken(userToken);
                             // 정상적으로 session테이블에 있는 user_id값 받아왔다면
                             if(rs_session != null) {
-                            	if (rs_session.next())
-                    				user_id = rs_session.getString(1);
+                                if (rs_session.next()) {
+                                    user_id = rs_session.getString(1);
+
+                                    // 얻어온 값으로 account 조회해서  모든 user info값 user객체에 저장
+                                    ResultSet rs_account = DBConnect.AccessAccountWithId(user_id);
+                                    if (rs_account != null) {
+                                        if (rs_account.next()) {
+                                            user_mail = rs_account.getString(1);
+                                            user_nick = rs_account.getString(2);
+                                            user_birthday = rs_account.getString(3);
+                                            user_statusmsg = rs_account.getString(4);
+                                        }
+
+                                        user = new User(userToken, user_id, user_nick, user_statusmsg, null);
+
+                                        // 서버로 유저 정보 전송
+                                        HashMap<String, String> userInfoMap = new HashMap<>();
+                                        userInfoMap.put("id", user_id);
+                                        userInfoMap.put("nick", user_nick);
+                                        userInfoMap.put("userMsg", user_statusmsg);
+                                        userInfoMap.put("friend", null);
+                                        out.println(Util.createJSON(200, userInfoMap));
+                                    }
+                                }
                             }
-                            // 얻어온 값으로 account 조회해서  모든 user info값 user객체에 저장
-                            ResultSet rs_account = DBConnect.AccessAccountWithId(user_id);
-                            if(rs_account != null) {
-                            	if (rs_account.next()) {
-                            		user_mail = rs_account.getString(1);
-	                            	user_pw = rs_account.getString(2);
-	                            	user_nick = rs_account.getString(3);
-	                            	user_birthday = rs_account.getString(4);
-	                            	user_statusmsg = rs_account.getString(5);
-                            	}
+                            else {
+                                out.println(Util.createSingleKeyValueJSON(403, "msg", "Token Not Valid!"));
+                                in.close();
+                                out.close();
+                                socket.close();
+                                break;
                             }
-                            user = new User(userToken, user_id,user_nick,user_statusmsg, null);
+
+                            // 정보 로드 실패시
+                            if(user == null) {
+                                // 에러 발송 후 서버랑 연결 해제
+                                out.println(Util.createSingleKeyValueJSON(400, "msg", "Can't Find User Infomation!"));
+                                in.close();
+                                out.close();
+                                socket.close();
+                                break;
+                            }
                         }
                     }
                     // User 정보가 있을 경우 처리 -- 추후에
