@@ -127,7 +127,7 @@ public class FriendServer extends Thread {
                     }
 
                     /* 로그아웃 처리 */
-                    if(requestCode == 303) {
+                    if(requestCode == 301) {
                         String userToken = jsonObject.get("token").getAsString();
                         boolean result = DBConnect.removeToken(userToken, socket.getInetAddress().getHostAddress());
                         out.println(Util.createSingleKeyValueJSON(301, "msg", "logout"));
@@ -135,7 +135,7 @@ public class FriendServer extends Thread {
                     }
 
                     /* Covid-19 기능 처리*/
-                    if(requestCode == 304){
+                    if(requestCode == 303){
                         LocalDate currentDate = LocalDate.now();
                         LocalDate ago1day = currentDate.minusDays(1);
                         String currentDateStr = currentDate.format(DateTimeFormatter.BASIC_ISO_DATE);
