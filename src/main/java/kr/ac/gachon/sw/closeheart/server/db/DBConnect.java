@@ -1,14 +1,9 @@
 package kr.ac.gachon.sw.closeheart.server.db;
 
-import kr.ac.gachon.sw.closeheart.server.User;
-import kr.ac.gachon.sw.closeheart.server.util.Util;
-
 import java.sql.*;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.Random;
 
 public class DBConnect {
 	/* 유저 생성 함수
