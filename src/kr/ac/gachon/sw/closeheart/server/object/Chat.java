@@ -15,6 +15,10 @@ public class Chat {
         this.chatTime = chatTime;
     }
 
+    public int getChatType() {
+        return chatType;
+    }
+
     public User getChatOwner() {
         return chatOwner;
     }
