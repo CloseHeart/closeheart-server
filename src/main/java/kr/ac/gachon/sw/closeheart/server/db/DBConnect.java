@@ -385,4 +385,33 @@ public class DBConnect {
 		}
 		return false;
 	}
+
+	/*
+	 * 만료된 토큰 삭제
+	 * @return 성공 여부
+	 */
+	public static boolean removeExpiredToken() {
+		Connection dbConnection;
+		try {
+			// DB 연결 수립
+			dbConnection = DBManager.getDBConnection();
+
+			// Delete SQL 작성
+			PreparedStatement preparedStatement = dbConnection.prepareStatement("delete from session where expiredTime < ?");
+
+			// 현재 Timestamp를 구함
+			Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+
+			// ? 자리에 현재 Timestamp 삽입
+			preparedStatement.setTimestamp(1, timestamp);
+
+			// SQL문 실행
+			preparedStatement.executeUpdate();
+
+			return true;
+		} catch (Exception e) {
+			e.printStackTrace();;
+		}
+		return false;
+	}
 }

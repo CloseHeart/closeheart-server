@@ -15,8 +15,12 @@ public class ServerMain {
 		// 채팅 서버 Thread
 		ChatServer chatServer = new ChatServer(chatServerPort);
 
+		// 토큰 리무버 Thread
+		TokenRemoveThread tokenRemoveThread = new TokenRemoveThread();
+
 		loginServer.start();
 		friendServer.start();
 		chatServer.start();
+		tokenRemoveThread.start();
 	}
 }
