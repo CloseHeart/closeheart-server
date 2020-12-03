@@ -87,20 +87,23 @@ public class LoginServer extends Thread {
 						else if(requestCode == 104) {
 							registerHandler(clientJson);
 						}
+						else if(requestCode == 105) {
+							passwordResetHandler(clientJson);
+						}
 						/* 알 수 없는 Request Code 처리 */
 						else {
 							System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Not Valid Request!"));
-							out.println(Util.createSingleKeyValueJSON(400, "msg", "Not Valid Request!") + "\n");
+							out.println(Util.createSingleKeyValueJSON(400, "msg", "Not Valid Request!"));
 						}
 					}
 					// Json이 비어있는 Request라면 유효하지 않다고 보냄
 					else {
 						System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Not Valid Request!"));
-						out.println(Util.createSingleKeyValueJSON(400, "msg", "Not Valid Request!") + "\n");
+						out.println(Util.createSingleKeyValueJSON(400, "msg", "Not Valid Request!"));
 					}
 				}
 			} catch (Exception e) {
-				if(out != null) out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error") + "\n");
+				if(out != null) out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error"));
 				System.out.println("Login Server Error! " + e.getMessage());
 			}
 		}
@@ -140,13 +143,13 @@ public class LoginServer extends Thread {
 				// 세선 생성 실패시
 				else {
 					System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Session Create Failed!"));
-					out.println(Util.createSingleKeyValueJSON(500, "msg", "Session Create Failed") + "\n");
+					out.println(Util.createSingleKeyValueJSON(500, "msg", "Session Create Failed"));
 				}
 			}
 			// 생성 실패시 실패한 것을 Client에 알림
 			else {
 				System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Login Failed!"));
-				out.println(Util.createSingleKeyValueJSON(401, "msg", "Login Failed") + "\n");
+				out.println(Util.createSingleKeyValueJSON(401, "msg", "Login Failed"));
 			}
 			return false;
 		}
@@ -233,15 +236,29 @@ public class LoginServer extends Thread {
 				// 생성되었으면 200 (정상), 실패했으면 서버 문제이므로 500
 				if(isCreated) {
 					System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Register Success"));
-					out.println(Util.createSingleKeyValueJSON(200, "msg", "Register Success") + "\n");
+					out.println(Util.createSingleKeyValueJSON(200, "msg", "Register Success"));
 				}
 				else {
 					System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Register Failed!"));
-					out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error") + "\n");
+					out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error"));
 				}
 			}
 			else {
-				out.println(Util.createSingleKeyValueJSON(403, "msg", "Duplicated") + "\n");
+				out.println(Util.createSingleKeyValueJSON(403, "msg", "Duplicated"));
+			}
+		}
+
+		private void passwordResetHandler(JsonObject clientJson) throws Exception {
+			System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Password Reset Request"));
+			String email = clientJson.get("email").getAsString();
+
+			boolean checkEmail = DBConnect.emailCheck(email);
+
+			if(checkEmail) {
+				out.println(Util.createSingleKeyValueJSON(200, "msg", "success"));
+			}
+			else {
+				out.println(Util.createSingleKeyValueJSON(400, "msg", "failed"));
 			}
 		}
 	}
