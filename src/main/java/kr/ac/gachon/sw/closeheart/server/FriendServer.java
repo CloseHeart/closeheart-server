@@ -1,20 +1,26 @@
 package kr.ac.gachon.sw.closeheart.server;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import jdk.nashorn.internal.parser.JSONParser;
 import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
 import kr.ac.gachon.sw.closeheart.server.object.User;
 import kr.ac.gachon.sw.closeheart.server.util.Util;
+import kr.ac.gachon.sw.closeheart.server.api.Covid19API;
 
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.ResultSet;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.time.format.DateTimeFormatter;
 
 public class FriendServer extends Thread {
     private int port;
@@ -121,11 +127,50 @@ public class FriendServer extends Thread {
                     }
 
                     /* 로그아웃 처리 */
-                    if(requestCode == 301) {
+                    if(requestCode == 303) {
                         String userToken = jsonObject.get("token").getAsString();
                         boolean result = DBConnect.removeToken(userToken, socket.getInetAddress().getHostAddress());
                         out.println(Util.createSingleKeyValueJSON(301, "msg", "logout"));
                         System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Logout - Token Delete : " + result));
+                    }
+
+                    /* Covid-19 기능 처리*/
+                    if(requestCode == 304){
+                        LocalDate currentDate = LocalDate.now();
+                        LocalDate ago1day = currentDate.minusDays(1);
+                        String currentDateStr = currentDate.format(DateTimeFormatter.BASIC_ISO_DATE);
+                        String agoDateStr = ago1day.format(DateTimeFormatter.BASIC_ISO_DATE);
+
+                        JsonObject currentCovidInfo = Covid19API.getCovid19Data(currentDateStr);
+                        JsonObject agoCovidInfo = Covid19API.getCovid19Data(agoDateStr);
+
+                        try{
+                            JsonObject currentObj = JsonParser.parseString(currentCovidInfo.toString()).getAsJsonObject();
+                            JsonObject response = currentObj.get("response").getAsJsonObject();
+                            JsonObject body = currentObj.get("body").getAsJsonObject();
+                            JsonObject items = currentObj.get("items").getAsJsonObject();
+                            JsonArray item = currentObj.get("item").getAsJsonArray();
+
+                            JsonObject curr = (JsonObject) item.get(0);
+                            int currDecideCnd = curr.get("DECIDE_CNT").getAsInt();  // 오늘 확진자 수
+
+                            JsonObject agoOBj = JsonParser.parseString(agoCovidInfo.toString()).getAsJsonObject();
+                            response = agoOBj.get("response").getAsJsonObject();
+                            body = agoOBj.get("body").getAsJsonObject();
+                            items = agoOBj.get("items").getAsJsonObject();
+                            item = agoOBj.get("item").getAsJsonArray(); // 어제 확진자 수
+
+                            JsonObject ago = (JsonObject) item.get(0);
+                            int agoDecideCnd = ago.get("DECIDE_CNT").getAsInt();
+                            int newCnt = currDecideCnd - agoDecideCnd;  // 신규 확진자 수
+                            out.println("신규 확진자 = " + newCnt + ", 총 확진자 = " + currDecideCnd);
+                            System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Covid-19 Date Send Success!"));
+                        }
+                        catch (Exception e){
+                            System.out.println("Conversion Failed!" + e.getMessage());
+                            out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error") + "\n");
+                        }
+
                     }
                 }
             }
