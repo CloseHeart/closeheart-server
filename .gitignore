@@ -2,3 +2,4 @@
 bin
 src/kr/ac/gachon/sw/closeheart/server/db/DBInfo.java
 lib/closeheart-db.jar
+target
