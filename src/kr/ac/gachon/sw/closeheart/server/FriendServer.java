@@ -3,13 +3,13 @@ package kr.ac.gachon.sw.closeheart.server;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
+import kr.ac.gachon.sw.closeheart.server.object.User;
 import kr.ac.gachon.sw.closeheart.server.util.Util;
 
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.HashMap;
 import java.util.Scanner;
