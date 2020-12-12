@@ -11,7 +11,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 
 public class Covid19API {
-    private static String serviceKey = "";
+    private static String serviceKey = "%2F62vvihbBAaUdKv4wHFwsSP6ZMNTNRpGE%2FZEurefpJYtCWzFM1blJ293Kb66k9GgndAigRBhKXLvdkjsbOKW1Q%3D%3D";
     private static String serviceURL = "http://openapi.data.go.kr/openapi/service/rest/Covid19/getCovid19InfStateJson";
 
     public static JsonObject getCovid19Data(String dateStr) throws Exception {
@@ -19,7 +19,7 @@ public class Covid19API {
         StringBuilder urlBuilder = new StringBuilder(serviceURL);
         urlBuilder.append("?" + URLEncoder.encode("ServiceKey", "UTF-8") + "=" + serviceKey);
         urlBuilder.append("&" + URLEncoder.encode("pageNo", "UTF-8") + "=1");
-        urlBuilder.append("&" + URLEncoder.encode("numOfRows", "UTF-8") + "=1");
+        urlBuilder.append("&" + URLEncoder.encode("numOfRows", "UTF-8") + "=2");
         urlBuilder.append("&" + URLEncoder.encode("startCreateDt", "UTF-8") + "=" + dateStr);
         urlBuilder.append("&" + URLEncoder.encode("endCreateDt", "UTF-8") + "=" + dateStr);
 

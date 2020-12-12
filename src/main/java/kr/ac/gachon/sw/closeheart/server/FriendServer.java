@@ -14,7 +14,6 @@ import java.net.Socket;
 import java.sql.ResultSet;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
@@ -108,15 +107,22 @@ public class FriendServer extends Thread {
                             String friendRequestID = jsonObject.get("requestID").getAsString();
                             // 해당 아이디가 유효하다면
                             if(checkValidUser(friendRequestID)) {
-                                // 친구 요청 전송
-                                try {
-                                    boolean isSuccessFriendRequest = sendFriendRequest(friendRequestID);
-                                    // 전송 성공하면 200, 실패하면 500
-                                    if(isSuccessFriendRequest) out.println(Util.createSingleKeyValueJSON(200, "msg", "friendrequest"));
-                                    else out.println(Util.createSingleKeyValueJSON(500, "msg", "friendrequest"));
-                                } catch (SQLIntegrityConstraintViolationException intgE) {
-                                    // 제약 조건 에러 발생이면 이미 친구이거나 전송된 요청이므로 401
-                                    out.println(Util.createSingleKeyValueJSON(401, "msg", "friendrequest"));
+                                if(!friendRequestID.equals(user.getUserID())) {
+                                    // 친구 요청 전송
+                                    try {
+                                        boolean isSuccessFriendRequest = sendFriendRequest(friendRequestID);
+                                        // 전송 성공하면 200, 실패하면 500
+                                        if (isSuccessFriendRequest)
+                                            out.println(Util.createSingleKeyValueJSON(200, "msg", "friendrequest"));
+                                        else out.println(Util.createSingleKeyValueJSON(500, "msg", "friendrequest"));
+                                    } catch (SQLIntegrityConstraintViolationException intgE) {
+                                        // 제약 조건 에러 발생이면 이미 친구이거나 전송된 요청이므로 401
+                                        out.println(Util.createSingleKeyValueJSON(401, "msg", "friendrequest"));
+                                    }
+                                }
+                                else {
+                                    // 본인에게 보낼 수 없는 요청 - 402
+                                    out.println(Util.createSingleKeyValueJSON(402, "msg", "friendrequest"));
                                 }
                             }
                             else {
@@ -146,26 +152,30 @@ public class FriendServer extends Thread {
                         try{
                             JsonObject currentObj = JsonParser.parseString(currentCovidInfo.toString()).getAsJsonObject();
                             JsonObject response = currentObj.get("response").getAsJsonObject();
-                            JsonObject body = currentObj.get("body").getAsJsonObject();
-                            JsonObject items = currentObj.get("items").getAsJsonObject();
-                            JsonArray item = currentObj.get("item").getAsJsonArray();
+                            JsonObject body = response.get("body").getAsJsonObject();
+                            JsonObject items = body.get("items").getAsJsonObject();
+                            JsonObject item = items.get("item").getAsJsonObject();
 
-                            JsonObject curr = (JsonObject) item.get(0);
-                            int currDecideCnd = curr.get("DECIDE_CNT").getAsInt();  // 오늘 확진자 수
+                            int currDecideCnd = item.get("decideCnt").getAsInt();
 
                             JsonObject agoOBj = JsonParser.parseString(agoCovidInfo.toString()).getAsJsonObject();
                             response = agoOBj.get("response").getAsJsonObject();
-                            body = agoOBj.get("body").getAsJsonObject();
-                            items = agoOBj.get("items").getAsJsonObject();
-                            item = agoOBj.get("item").getAsJsonArray(); // 어제 확진자 수
+                            body = response.get("body").getAsJsonObject();
+                            items = body.get("items").getAsJsonObject();
+                            item = items.get("item").getAsJsonObject(); // 어제 확진자 수
 
-                            JsonObject ago = (JsonObject) item.get(0);
-                            int agoDecideCnd = ago.get("DECIDE_CNT").getAsInt();
+                            int agoDecideCnd = item.get("decideCnt").getAsInt();
                             int newCnt = currDecideCnd - agoDecideCnd;  // 신규 확진자 수
-                            out.println("신규 확진자 = " + newCnt + ", 총 확진자 = " + currDecideCnd);
+                            //out.println("신규 확진자 = " + newCnt + ", 총 확진자 = " + currDecideCnd);
+                            HashMap<String, String> covidInfo = new HashMap<>();
+                            System.out.println(String.valueOf(newCnt));
+                            covidInfo.put("newCnt", String.valueOf(newCnt));
+                            covidInfo.put("currDecideCnd", String.valueOf(currDecideCnd));
+                            out.println(Util.createJSON(303, covidInfo));
                             System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Covid-19 Date Send Success!"));
                         }
                         catch (Exception e){
+                            e.printStackTrace();
                             System.out.println("Conversion Failed!" + e.getMessage());
                             out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error") + "\n");
                         }
