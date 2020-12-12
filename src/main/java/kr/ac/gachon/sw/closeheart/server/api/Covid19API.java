@@ -31,15 +31,9 @@ public class Covid19API {
         StringBuilder urlBuilder = new StringBuilder(serviceURL);
         urlBuilder.append("?" + URLEncoder.encode("ServiceKey", "UTF-8") + "=" + serviceKey);
         urlBuilder.append("&" + URLEncoder.encode("pageNo", "UTF-8") + "=1");
-<<<<<<< HEAD
         urlBuilder.append("&" + URLEncoder.encode("numOfRows", "UTF-8") + "=2");
-        urlBuilder.append("&" + URLEncoder.encode("startCreateDt", "UTF-8") + "=" + dateStr);
-        urlBuilder.append("&" + URLEncoder.encode("endCreateDt", "UTF-8") + "=" + dateStr);
-=======
-        urlBuilder.append("&" + URLEncoder.encode("numOfRows", "UTF-8") + "=1");
         urlBuilder.append("&" + URLEncoder.encode("startCreateDt", "UTF-8") + "=" + agoDateStr);
         urlBuilder.append("&" + URLEncoder.encode("endCreateDt", "UTF-8") + "=" + currentDateStr);
->>>>>>> f9322ccabaabccf58a6270e1559c47c7a3598d4c
 
         URL apiURL = new URL(urlBuilder.toString());
 
@@ -78,17 +72,27 @@ public class Covid19API {
             return null;
         }
     }
-
-    public void getCovid19NewDecide(JsonObject object){
-        if(DBConnect.getCovid19Info(currentDateStr) == -1){
+    /*
+    * 해당 날짜의 신규 확진자 수 받기
+    * @param 해당 날짜 Covid19API object
+    * @return 신규 확진자 수
+    * */
+    public static int getCovid19NewDecide(JsonObject object) throws Exception{
+        if(DBConnect.getCovid19Info(currentDateStr) == -1) {
+            if(DBConnect.getCovid19Info(agoDateStr) == -1) {
+                DBConnect.setCovid19Info(agoDateStr, getAgoCovid19Decide(object));
+            }
             DBConnect.setCovid19Info(currentDateStr, getCurrentCovid19Decide(object));
-            DBConnect.setCovid19Info(agoDateStr, getAgoCovid19Decide(object));
         }
-        else {
-
-        }
+        int newDecide = DBConnect.getCovid19Info(currentDateStr) - DBConnect.getCovid19Info(agoDateStr);
+        return newDecide;
     }
-    public int getCurrentCovid19Decide(JsonObject object){
+    /*
+     * 해당 날짜의 확진자 수 받기
+     * @param 해당 날짜 Covid19API object
+     * @return 확진자 수
+     * */
+    public static int getCurrentCovid19Decide(JsonObject object) throws Exception{
         JsonObject currentObj = JsonParser.parseString(object.toString()).getAsJsonObject();
         JsonObject response = currentObj.get("response").getAsJsonObject();
         JsonObject body = response.get("body").getAsJsonObject();
@@ -96,10 +100,15 @@ public class Covid19API {
         JsonArray item = items.get("item").getAsJsonArray();
 
         JsonObject curr = (JsonObject) item.get(0);
-        int currDecideCnt = curr.get("DECIDE_CNT").getAsInt();  // 오늘 확진자 수
+        int currDecideCnt = curr.get("decideCnt").getAsInt();  // 오늘 확진자 수
         return currDecideCnt;
     }
-    public int getAgoCovid19Decide(JsonObject object){
+    /*
+     * 하루 전 날의 확진자 수 받기
+     * @param 해당 날짜 Covid19API object
+     * @return 확진자 수
+     * */
+    public static int getAgoCovid19Decide(JsonObject object) throws Exception{
         JsonObject currentObj = JsonParser.parseString(object.toString()).getAsJsonObject();
         JsonObject response = currentObj.get("response").getAsJsonObject();
         JsonObject body = response.get("body").getAsJsonObject();
@@ -107,7 +116,7 @@ public class Covid19API {
         JsonArray item = items.get("item").getAsJsonArray();
 
         JsonObject ago = (JsonObject) item.get(1);
-        int agoDecideCnt = ago.get("DECIDE_CNT").getAsInt();  // 어제 확진자 수
+        int agoDecideCnt = ago.get("decideCnt").getAsInt();  // 어제 확진자 수
         return agoDecideCnt;
     }
 }

@@ -464,7 +464,7 @@ public class DBConnect {
 			conditionList.put("date", date);
 
 			// SQL Select Query 전송
-			rs = DBManager.selectQuery(dbConnection, "session", attrList, conditionList);
+			rs = DBManager.selectQuery(dbConnection, "covid19api", attrList, conditionList);
 
 			if (rs.next()) {
 				// 확진자 수 반환
