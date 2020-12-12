@@ -133,6 +133,70 @@ public class DBConnect {
 		return rs;
 	}
 
+	/* 본인 user_id이고 type이 0인 friend table의 행 얻어오는 함수
+	 * @author Taehyun Park
+	 * @param  user_id 유저 아이디
+	 * @return ResultSet
+	 */
+	public static ResultSet AccessAccountWithIdAndType(String user_id, int type) {
+		Connection dbConnection;
+		ResultSet rs = null;
+		try {
+			dbConnection = DBManager.getDBConnection();
+
+			// 가져올 Attribute List
+			ArrayList<String> attrList = new ArrayList<String>();
+			attrList.add("user2_id");
+
+			// Condition HashMap
+			HashMap<String, Object> conditionList = new HashMap<String, Object>();
+			conditionList.put("user1_id", user_id);
+			conditionList.put("type", type);
+
+			// SQL Select Query 전송
+			rs = DBManager.selectQuery(dbConnection, "friend", attrList, conditionList);
+			if (rs.next()) {
+				rs.beforeFirst();
+				return rs;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return rs;
+	}
+
+	/* 친구 유저 아이디 값을 이용해 계정 테이블에 액세스하는 함수
+	 * @author Taehyun Park
+	 * @param user_id 유저 아이디(친구 아이디값)
+	 * @return ResultSet
+	 */
+	public static ResultSet AccessAccountWithFriendId(String user_id) {
+		Connection dbConnection;
+		ResultSet rs = null;
+		try {
+			dbConnection = DBManager.getDBConnection();
+
+			// 가져올 Attribute List
+			ArrayList<String> attrList = new ArrayList<String>();
+			attrList.add("user_nick");
+			attrList.add("user_statusmsg");
+
+			// Condition HashMap
+			HashMap<String, Object> conditionList = new HashMap<String, Object>();
+			conditionList.put("user_id", user_id);
+
+			// SQL Select Query 전송
+			rs = DBManager.selectQuery(dbConnection, "account", attrList, conditionList);
+			if (rs.next()) {
+				rs.beforeFirst();
+				return rs;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return rs;
+	}
+
 	/* 존재하는 유저인지 체크
 	 * @author Minjae Seon
 	 * @param user_id 유저 아이디
