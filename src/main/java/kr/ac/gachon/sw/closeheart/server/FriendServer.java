@@ -146,8 +146,7 @@ public class FriendServer extends Thread {
                         String currentDateStr = currentDate.format(DateTimeFormatter.BASIC_ISO_DATE);
                         String agoDateStr = ago1day.format(DateTimeFormatter.BASIC_ISO_DATE);
 
-                        JsonObject currentCovidInfo = Covid19API.getCovid19Data(currentDateStr);
-                        JsonObject agoCovidInfo = Covid19API.getCovid19Data(agoDateStr);
+                        JsonObject currentCovidInfo = Covid19API.getCovid19Data(currentDate);
 
                         try{
                             JsonObject currentObj = JsonParser.parseString(currentCovidInfo.toString()).getAsJsonObject();
