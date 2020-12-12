@@ -1,15 +1,17 @@
 package kr.ac.gachon.sw.closeheart.server.object;
 
+import java.util.ArrayList;
+
 public class User {
 	private String userToken;
 	private String userID;
 	private String userNick;
 	private String userMsg;
-	private User[] friends;
+	private ArrayList<User> friends;
 	private boolean isOnline;
 
 	// 토큰 포함 본인 유저 정보
-	public User(String userToken, String userID, String userNick, String userMsg, User[] friends) {
+	public User(String userToken, String userID, String userNick, String userMsg, ArrayList<User> friends) {
 		this.userToken = userToken;
 		this.userID = userID;
 		this.userNick = userNick;
@@ -41,7 +43,7 @@ public class User {
 		return userMsg;
 	}
 
-	public User[] getFriends() { return friends; }
+	public ArrayList<User> getFriends() { return friends; }
 
 	public boolean getOnline() {
 		return isOnline;
@@ -51,7 +53,7 @@ public class User {
 		this.userMsg = userMsg;
 	}
 
-	public void setFriends(User[] friends) { this.friends = friends; }
+	public void setFriends(ArrayList<User> friends) { this.friends = friends; }
 
 	public void setOnline(boolean isOnline) {
 		this.isOnline = isOnline;
