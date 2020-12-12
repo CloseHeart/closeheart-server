@@ -141,40 +141,20 @@ public class FriendServer extends Thread {
 
                     /* Covid-19 기능 처리*/
                     if(requestCode == 303){
-                        LocalDate currentDate = LocalDate.now();
-                        LocalDate ago1day = currentDate.minusDays(1);
-                        String currentDateStr = currentDate.format(DateTimeFormatter.BASIC_ISO_DATE);
-                        String agoDateStr = ago1day.format(DateTimeFormatter.BASIC_ISO_DATE);
+                        try {
+                            LocalDate currentDate = LocalDate.now();
+                            JsonObject currentCovidInfo = Covid19API.getCovid19Data(currentDate);
 
-                        JsonObject currentCovidInfo = Covid19API.getCovid19Data(currentDateStr);
-                        JsonObject agoCovidInfo = Covid19API.getCovid19Data(agoDateStr);
-
-                        try{
-                            JsonObject currentObj = JsonParser.parseString(currentCovidInfo.toString()).getAsJsonObject();
-                            JsonObject response = currentObj.get("response").getAsJsonObject();
-                            JsonObject body = response.get("body").getAsJsonObject();
-                            JsonObject items = body.get("items").getAsJsonObject();
-                            JsonObject item = items.get("item").getAsJsonObject();
-
-                            int currDecideCnd = item.get("decideCnt").getAsInt();
-
-                            JsonObject agoOBj = JsonParser.parseString(agoCovidInfo.toString()).getAsJsonObject();
-                            response = agoOBj.get("response").getAsJsonObject();
-                            body = response.get("body").getAsJsonObject();
-                            items = body.get("items").getAsJsonObject();
-                            item = items.get("item").getAsJsonObject(); // 어제 확진자 수
-
-                            int agoDecideCnd = item.get("decideCnt").getAsInt();
-                            int newCnt = currDecideCnd - agoDecideCnd;  // 신규 확진자 수
-                            //out.println("신규 확진자 = " + newCnt + ", 총 확진자 = " + currDecideCnd);
+                            int newCnt = Covid19API.getCovid19NewDecide(currentCovidInfo);  // 신규 확진자 수
+                            int currDecideCnd = Covid19API.getCurrentCovid19Decide(currentCovidInfo);   // 오늘 확진자 수
                             HashMap<String, String> covidInfo = new HashMap<>();
                             System.out.println(String.valueOf(newCnt));
                             covidInfo.put("newCnt", String.valueOf(newCnt));
                             covidInfo.put("currDecideCnd", String.valueOf(currDecideCnd));
                             out.println(Util.createJSON(303, covidInfo));
+
                             System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Covid-19 Date Send Success!"));
-                        }
-                        catch (Exception e){
+                        } catch (Exception e) {
                             e.printStackTrace();
                             System.out.println("Conversion Failed!" + e.getMessage());
                             out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error") + "\n");
