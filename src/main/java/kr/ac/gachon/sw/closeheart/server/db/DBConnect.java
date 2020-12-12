@@ -428,7 +428,7 @@ public class DBConnect {
 			dbConnection = DBManager.getDBConnection();
 
 			// Insert Into SQL 작성
-			PreparedStatement preparedStatement = dbConnection.prepareStatement("insert into session values(?, ?)");
+			PreparedStatement preparedStatement = dbConnection.prepareStatement("insert into covid19api values(?, ?)");
 
 			// 정보 삽입
 			preparedStatement.setString(1, date);
@@ -447,7 +447,7 @@ public class DBConnect {
 	/*
 	 * 해당 날짜의 코로나 19 정보 받기
 	 * @param date 날짜 (00000000)
-	 * @return ResultSet
+	 * @return 확진자 수 (실패시 -1)
 	 */
 	public static int getCovid19Info(String date) {
 		Connection dbConnection;
