@@ -486,6 +486,12 @@ public class DBConnect {
 		// DB 연결 수립
 		dbConnection = DBManager.getDBConnection();
 
+		/*
+			Friend Table Type 관련
+			type 0 = 현재 친구인 상태
+			type 1 = 내가 요청을 보낸 상태
+			type 2 = 상대방에게 요청을 받은 상태
+		*/
 		PreparedStatement sessionStatement = dbConnection.prepareStatement("INSERT INTO friend (user1_id, user2_id, type) values (?, ?, ?)");
 		sessionStatement.setString(1, myID); // 친구 요청을 보낸 유저 ID
 		sessionStatement.setString(2, requestID); // 요청을 받을 유저 ID
@@ -495,7 +501,7 @@ public class DBConnect {
 		// 반대로도 저장
 		sessionStatement.setString(1, requestID);
 		sessionStatement.setString(2, myID);
-		sessionStatement.setInt(3, 1);
+		sessionStatement.setInt(3, 2);
 		sessionStatement.addBatch();
 
 		// 전송
@@ -706,5 +712,168 @@ public class DBConnect {
 			}
 		}
 		return -1;
+	}
+
+
+	/*
+	 * 친구 수락 처리
+	 * @author Minjae Seon
+	 * @param userID 수락하는 유저 ID
+	 * @param targetUserID 상대 ID
+	 * @return 성공 여부
+	 */
+	public static boolean requestAccept(String userID, String targetUserID) {
+		Connection dbConnection = null;
+		try {
+			// DB 연결 수립
+			dbConnection = DBManager.getDBConnection();
+			// Insert Into SQL 작성
+			PreparedStatement preparedStatement = dbConnection.prepareStatement("update friend set type = 0 where (user1_id = ? and user2_id = ?) or (user1_id = ? and user2_id = ?)");
+
+			// 조건문
+			preparedStatement.setString(1, userID);
+			preparedStatement.setString(2, targetUserID);
+			preparedStatement.setString(3, targetUserID);
+			preparedStatement.setString(4, userID);
+
+			// SQL문 실행
+			preparedStatement.executeUpdate();
+
+			return true;
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return false;
+	}
+
+	/*
+	 * 친구 관계 삭제
+	 * @author Minjae Seon
+	 * @param userID 유저 ID
+	 * @param targetUserID 상대 ID
+	 * @return 성공 여부
+	 */
+	public static boolean removeFriendRelationship(String userID, String targetUserID) {
+		Connection dbConnection = null;
+		try {
+			// DB 연결 수립
+			dbConnection = DBManager.getDBConnection();
+			// Insert Into SQL 작성
+			PreparedStatement preparedStatement = dbConnection.prepareStatement("delete from friend where (user1_id = ? and user2_id = ?) or (user1_id = ? and user2_id = ?)");
+
+			// 조건문
+			preparedStatement.setString(1, userID);
+			preparedStatement.setString(2, targetUserID);
+			preparedStatement.setString(3, targetUserID);
+			preparedStatement.setString(4, userID);
+
+			// SQL문 실행
+			preparedStatement.executeUpdate();
+			return true;
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return false;
+	}
+
+	/*
+	 * 비밀번호 초기화
+	 * @author Minjae Seon
+	 * @param id 유저 ID
+	 * @param newPassword 새 패스워드 (암호화)
+	 * @return 성공 여부
+	 */
+	public static boolean resetPassword(String id, String newPassword) {
+		Connection dbConnection = null;
+		try {
+			dbConnection = DBManager.getDBConnection();
+
+			// PreparedStatement 이용 Insert
+			PreparedStatement sessionStatement = dbConnection.prepareStatement("UPDATE account set user_pw = ? where user_id = ?");
+			sessionStatement.setString(1, newPassword);
+			sessionStatement.setString(2, id);
+
+			// 전송
+			int result = sessionStatement.executeUpdate();
+
+			return result >= 1;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return false;
+	}
+
+	/*
+	 * 비밀번호 찾기시 일치 정보 찾기
+	 * @author Minjae Seon
+	 * @param email 이메일
+	 * @param id 아이디
+	 * @param birthday 생년월일
+	 * @return boolean
+	 */
+	public static boolean checkFindPWInfo(String email, String id, String birthday) {
+		Connection dbConnection = null;
+		ResultSet rs = null;
+		try {
+			dbConnection = DBManager.getDBConnection();
+
+			// 가져올 Attribute List
+			ArrayList<String> attrList = new ArrayList<String>();
+			attrList.add("user_mail");
+
+			// Condition HashMap
+			HashMap<String, Object> conditionList = new HashMap<String, Object>();
+			conditionList.put("user_mail", email);
+			conditionList.put("user_id", id);
+			conditionList.put("user_birthday", birthday);
+
+			// SQL Select Query 전송
+			rs = DBManager.selectQuery(dbConnection, "account", attrList, conditionList);
+			if (rs.next()) {
+				return true;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return false;
 	}
 }

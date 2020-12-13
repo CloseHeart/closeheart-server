@@ -107,4 +107,21 @@ public class Util {
 	public static String createLogString(String tag, String IP, String msg) {
 		return "[" + tag + "][" + IP + "] " + msg;
 	}
+
+	/*
+	 * SHA-512 암호화
+	 * @author Minjae Seon
+	 * @param originalString 원본 문자열
+	 * @return SHA-512로 암호화된 문자열
+	 */
+	public static String encryptSHA512(String originalString) {
+		try {
+			MessageDigest messageDigest = MessageDigest.getInstance("SHA-512");
+			byte[] stringBytes = originalString.getBytes(StandardCharsets.UTF_8);
+			messageDigest.update(stringBytes);
+			return String.format("%0128x", new BigInteger(1, messageDigest.digest()));
+		} catch (NoSuchAlgorithmException e) {
+			return "";
+		}
+	}
 }

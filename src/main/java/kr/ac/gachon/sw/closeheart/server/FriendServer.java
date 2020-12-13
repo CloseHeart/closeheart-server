@@ -82,7 +82,7 @@ public class FriendServer extends Thread {
                     if(user == null) {
                         /* Friend 서버 최초 접근시 Login 처리 */
                         if(requestCode == 300) {
-                            if(!loginHandle(jsonObject)) {
+                            if(!loginHandler(jsonObject)) {
                                 break;
                             }
                             else {
@@ -123,6 +123,13 @@ public class FriendServer extends Thread {
 
                                             /* 친구 온라인이면 여기서 요청 메시지 전송하기 ! */
 
+                                            if(userInfo.containsKey(friendRequestID)) {
+                                                HashMap<String, Object> friendRequestSendMap = new HashMap<>();
+                                                friendRequestSendMap.put("msg", "friendreceive");
+                                                friendRequestSendMap.put("userID", user.getUserID());
+                                                friendRequestSendMap.put("userNick", user.getUserNick());
+                                                userInfo.get(friendRequestID).println(Util.createJSON(200, friendRequestSendMap));
+                                            }
                                         }
                                         else out.println(Util.createSingleKeyValueJSON(500, "msg", "friendrequest"));
                                     } catch (SQLIntegrityConstraintViolationException intgE) {
@@ -171,7 +178,11 @@ public class FriendServer extends Thread {
                         }
                         /* 친구 새로고침 처리 */
                         else if(requestCode == 304) {
-                            refreshHandle();
+                            refreshHandler(out, user.getUserID());
+                        }
+                        /* 친구 요청 수락 처리*/
+                        else if(requestCode == 305) {
+                            friendReceiveHandler(jsonObject);
                         }
                     }
                     /* 로그아웃 처리 */
@@ -196,7 +207,7 @@ public class FriendServer extends Thread {
          * @param jsonObject Client로부터 받은 JsonObject
          * @throws Exception 에러 예외처리
          */
-        private boolean loginHandle(JsonObject jsonObject) throws Exception {
+        private boolean loginHandler(JsonObject jsonObject) throws Exception {
             String userToken = jsonObject.get("token").getAsString();
 
             user = DBConnect.AccessSessionWithToken(userToken);
@@ -264,28 +275,49 @@ public class FriendServer extends Thread {
         /*
          * 친구 새로 고침 Handler
          * @author Minjae Seon
-         * @return Boolean
          */
-        private void refreshHandle() {
+        private void refreshHandler(PrintWriter userWriter, String userID) {
             HashMap<String, Object> userInfoMap = new HashMap<>();
             try {
                 JsonArray friendArray = new JsonArray();
                 // friend 테이블의 행 가져옴
-                ArrayList<User> friendUsers = DBConnect.AccessFriendTable(user.getUserID(), 0);
+                ArrayList<User> friendUsers = DBConnect.AccessFriendTable(userID, 0);
                 for (User friendUser : friendUsers) {
+                    if(userInfo.containsKey(friendUser.getUserID())) {
+                        friendUser.setOnline(true);
+                    }
                     friendArray.add(new Gson().toJson(friendUser, User.class));
                 }
 
                 // 서버로 유저 정보 전송
                 userInfoMap.put("msg", "friendrefresh");
                 userInfoMap.put("friend", friendArray);
-                out.println(Util.createJSON(200, userInfoMap));
+                userWriter.println(Util.createJSON(200, userInfoMap));
             }
             catch (Exception e) {
                 // 에러 알림
                 e.printStackTrace();
                 userInfoMap.put("msg", "friendrefresh");
                 out.println(Util.createJSON(500, userInfoMap));
+            }
+        }
+
+        /*
+         * 친구 요청 수락 / 거절 Handler
+         * @author Minjae Seon
+         */
+        private void friendReceiveHandler(JsonObject jsonObject) {
+            String msg = jsonObject.get("msg").getAsString();
+            String userID = jsonObject.get("id").getAsString();
+            String targetID = jsonObject.get("targetid").getAsString();
+
+            if(msg.equals("ok")) {
+                DBConnect.requestAccept(userID, targetID);
+                refreshHandler(out, user.getUserID());
+                if(userInfo.containsKey(targetID)) refreshHandler(userInfo.get(targetID), targetID);
+            }
+            else {
+                DBConnect.removeFriendRelationship(userID, targetID);
             }
         }
     }
