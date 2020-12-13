@@ -130,7 +130,7 @@ public class LoginServer extends Thread {
 				if (isSessionCreated) {
 					System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Login Success! ID : " + id));
 					// Login Token을 포함해 성공했다고 Client에 알림
-					HashMap<String, String> loginSuccessMap = new HashMap<>();
+					HashMap<String, Object> loginSuccessMap = new HashMap<>();
 					loginSuccessMap.put("authToken", loginToken);
 					loginSuccessMap.put("mainServerPort", String.valueOf(ServerMain.friendServerPort)); // 메인 (친구) 서버 포트를 알려줘 메인 서버로 연결을 유도
 					String loginSuccessJson = Util.createJSON(200, loginSuccessMap);

@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
 import org.json.JSONArray;
@@ -21,7 +22,7 @@ public class Util {
 	 * @param elements 응답 내에 작성할 Property (속성)
 	 * @return JSON 형태로 되어있는 String
 	 */
-	public static String createJSON(int code, HashMap<String, String> elements) {
+	public static String createJSON(int code, HashMap<String, Object> elements) {
 		JsonObject json = new JsonObject();
 		json.addProperty("code", code);
 
@@ -29,8 +30,8 @@ public class Util {
 
 		while(keyIterator.hasNext()) {
 			String key = keyIterator.next();
-			String value = elements.get(key);
-			json.addProperty(key, value);
+			Object value = elements.get(key);
+			json.addProperty(key, String.valueOf(value));
 		}
 
 		return json.toString();

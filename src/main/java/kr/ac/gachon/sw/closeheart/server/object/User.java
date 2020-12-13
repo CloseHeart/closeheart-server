@@ -54,6 +54,9 @@ public class User {
 	}
     // 친구 유저 객체 정보를 현재 본인 유저의 친구 ArrayList에 추가
 	public void setFriends(User friend) {
+		if(friends == null) {
+			friends = new ArrayList<>();
+		}
 		friends.add(friend);
 	}
 
