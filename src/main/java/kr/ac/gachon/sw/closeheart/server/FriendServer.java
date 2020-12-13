@@ -190,7 +190,7 @@ public class FriendServer extends Thread {
                             String friendRequestID = jsonObject.get("requestID").getAsString();
                             if(!friendRequestNick.isEmpty()){
                                 if(DBConnect.nickCheck(friendRequestNick)){
-                                    if(DBConnect.resetNickname(friendRequestNick, friendRequestID)){
+                                    if(DBConnect.resetNickname(friendRequestID, friendRequestNick)){
                                         out.println(Util.createSingleKeyValueJSON(200, "msg", "nickreset"));
                                         System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Reset Nickname Success!"));
                                     }
@@ -204,6 +204,18 @@ public class FriendServer extends Thread {
                             }
                             else{
                                 out.println(Util.createSingleKeyValueJSON(400, "msg", "nickreset"));
+                            }
+                        }
+                        /* 상태 메세지 설정 */
+                        else if(requestCode == 307){
+                            String friendRequestMSG = jsonObject.get("requestMSG").getAsString();
+                            String friendRequestID = jsonObject.get("requestID").getAsString();
+                            if(DBConnect.resetStatusmsg(friendRequestID, friendRequestMSG)){
+                                out.println(Util.createSingleKeyValueJSON(200, "msg", "statusmsgreset"));
+                                System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Reset StatusMSG Success!"));
+                            }
+                            else{
+                                out.println(Util.createSingleKeyValueJSON(500, "msg", "statusmsgreset"));
                             }
                         }
                     }
