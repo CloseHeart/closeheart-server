@@ -151,7 +151,9 @@ public class FriendServer extends Thread {
                             try {
                                 LocalDate currentDate = LocalDate.now();
                                 LocalTime currentTime = LocalTime.now();
-                                if(currentTime.getHour() < 11) currentDate =  currentDate.minusDays(1); // 코로나 업데이트 시간 전
+                                LocalTime standardTime = LocalTime.parse("10:10:00");
+
+                                if(currentTime.compareTo(standardTime) < 0) currentDate =  currentDate.minusDays(1); // 코로나 업데이트 시간 전
                                 int newCnt, currDecideCnd;
                               
                                 if (Covid19API.isCovid19Data(currentDate)) {
