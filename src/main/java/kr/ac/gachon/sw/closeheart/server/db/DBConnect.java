@@ -377,12 +377,19 @@ public class DBConnect {
 		sessionStatement.setString(1, myID); // 친구 요청을 보낸 유저 ID
 		sessionStatement.setString(2, requestID); // 요청을 받을 유저 ID
 		sessionStatement.setInt(3, 1); // 타입
+		sessionStatement.addBatch();
+
+		// 반대로도 저장
+		sessionStatement.setString(1, requestID);
+		sessionStatement.setString(2, myID);
+		sessionStatement.setInt(3, 1);
+		sessionStatement.addBatch();
 
 		// 전송
-		int result = sessionStatement.executeUpdate();
+		int[] result = sessionStatement.executeBatch();
 
-		// 1개 이상의 결과가 있다면 true, 아니라면 false
-		return result >= 1;
+		// 두 결과가 합쳐서 2 이상이면 true, 아니라면 false
+		return result[0] + result[1] >= 2;
 	}
 
 	/*

@@ -88,7 +88,7 @@ public class FriendServer extends Thread {
                             }
                         }
                     }
-                    // User 정보가 있을 경우 처리 -- 추후에
+                    // User 정보가 있을 경우 처리
                     else {
                         // 토큰 유효성 체크해서 유효하지 않으면 명령 처리 단계 진입 불가
                         boolean isValidToken = DBConnect.isValidToken(user.getUserToken(), socket.getInetAddress().getHostAddress());
