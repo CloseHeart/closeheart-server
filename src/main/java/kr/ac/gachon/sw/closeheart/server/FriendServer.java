@@ -22,8 +22,8 @@ import java.util.concurrent.Executors;
 import java.time.format.DateTimeFormatter;
 
 public class FriendServer extends Thread {
-    private int port;
-    private HashMap<String, PrintWriter> userInfo = new HashMap<>();
+    private final int port;
+    private final HashMap<String, PrintWriter> userInfo = new HashMap<>();
 
     public FriendServer(int port) {
         this.port = port;
@@ -190,6 +190,7 @@ public class FriendServer extends Thread {
                         String userToken = jsonObject.get("token").getAsString();
                         boolean result = DBConnect.removeToken(userToken, socket.getInetAddress().getHostAddress());
                         out.println(Util.createSingleKeyValueJSON(301, "msg", "logout"));
+                        userInfo.remove(user.getUserID());
                         System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Logout - Token Delete : " + result));
                     }
                 }
@@ -199,6 +200,8 @@ public class FriendServer extends Thread {
                 e.printStackTrace();
                 System.out.println("Friend Server Error! " + e.getMessage());
             }
+
+            if(user != null) userInfo.remove(user.getUserID());
         }
 
         /*
@@ -238,6 +241,8 @@ public class FriendServer extends Thread {
             userInfoMap.put("id", user.getUserID());
             userInfoMap.put("nick", user.getUserNick());
             userInfoMap.put("userMsg", user.getUserMsg());
+            userInfoMap.put("userEmail", user.getUserEmail());
+            userInfoMap.put("userBirthday", user.getUserBirthday());
             userInfoMap.put("friend", friendArray.toString());
             out.println(Util.createJSON(200, userInfoMap));
 
