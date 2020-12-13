@@ -15,9 +15,6 @@ import java.net.URLEncoder;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-import static kr.ac.gachon.sw.closeheart.server.db.DBConnect.getCovid19Info;
-import static kr.ac.gachon.sw.closeheart.server.db.DBConnect.setCovid19Info;
-
 public class Covid19API {
     private static String serviceKey = "%2F62vvihbBAaUdKv4wHFwsSP6ZMNTNRpGE%2FZEurefpJYtCWzFM1blJ293Kb66k9GgndAigRBhKXLvdkjsbOKW1Q%3D%3D";
     private static String serviceURL = "http://openapi.data.go.kr/openapi/service/rest/Covid19/getCovid19InfStateJson";
@@ -118,5 +115,14 @@ public class Covid19API {
         JsonObject ago = (JsonObject) item.get(1);
         int agoDecideCnt = ago.get("decideCnt").getAsInt();  // 어제 확진자 수
         return agoDecideCnt;
+    }
+    public static boolean isCovid19Data(LocalDate date){
+        String currStr = date.format(DateTimeFormatter.BASIC_ISO_DATE);
+        String agoStr = date.minusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE);
+        if(DBConnect.getCovid19Info(currStr) == -1 && DBConnect.getCovid19Info(agoStr) == -1){
+            return false;
+        }else{
+            return true;
+        }
     }
 }
