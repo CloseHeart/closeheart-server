@@ -218,6 +218,31 @@ public class FriendServer extends Thread {
                                 out.println(Util.createSingleKeyValueJSON(500, "msg", "statusmsgreset"));
                             }
                         }
+                        /* 비밀번호 변경 */
+                        else if(requestCode == 308){
+                            String friendRequestPW = jsonObject.get("requestPW").getAsString();
+                            String friendRequestID = jsonObject.get("requestID").getAsString();
+                            if(DBConnect.resetPassword(friendRequestID, friendRequestPW)){
+                                out.println(Util.createSingleKeyValueJSON(200, "msg", "pwreset"));
+                                System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Reset PW Success!"));
+                            }
+                            else{
+                                out.println(Util.createSingleKeyValueJSON(500, "msg", "pwreset"));
+                            }
+                        }
+                        /* 생일 변경 */
+                        else if(requestCode == 309){
+                            String friendRequestBirth = jsonObject.get("requestBirth").getAsString();
+                            String friendRequestID = jsonObject.get("requestID").getAsString();
+
+                            if(DBConnect.resetBirthday(friendRequestID, friendRequestBirth)){
+                                out.println(Util.createSingleKeyValueJSON(200, "msg", "birthdayreset"));
+                                System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Reset birthday Success!"));
+                            }
+                            else{
+                                out.println(Util.createSingleKeyValueJSON(500, "msg", "birthdayreset"));
+                            }
+                        }
                     }
                     /* 로그아웃 처리 */
                     if(requestCode == 301) {
@@ -225,6 +250,7 @@ public class FriendServer extends Thread {
                         boolean result = DBConnect.removeToken(userToken, socket.getInetAddress().getHostAddress());
                         out.println(Util.createSingleKeyValueJSON(301, "msg", "logout"));
                         System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Logout - Token Delete : " + result));
+
                     }
                 }
             }
