@@ -184,6 +184,28 @@ public class FriendServer extends Thread {
                         else if(requestCode == 305) {
                             friendReceiveHandler(jsonObject);
                         }
+                        /* 닉네임 변경 처리 */
+                        else if(requestCode == 306){
+                            String friendRequestNick = jsonObject.get("requestNick").getAsString();
+                            String friendRequestID = jsonObject.get("requestID").getAsString();
+                            if(!friendRequestNick.isEmpty()){
+                                if(DBConnect.nickCheck(friendRequestNick)){
+                                    if(DBConnect.resetNickname(friendRequestNick, friendRequestID)){
+                                        out.println(Util.createSingleKeyValueJSON(200, "msg", "nickreset"));
+                                        System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Reset Nickname Success!"));
+                                    }
+                                    else{
+                                        out.println(Util.createSingleKeyValueJSON(500, "msg", "nickreset"));
+                                    }
+                                }
+                                else{
+                                    out.println(Util.createSingleKeyValueJSON(401, "msg", "nickreset"));
+                                }
+                            }
+                            else{
+                                out.println(Util.createSingleKeyValueJSON(400, "msg", "nickreset"));
+                            }
+                        }
                     }
                     /* 로그아웃 처리 */
                     if(requestCode == 301) {
