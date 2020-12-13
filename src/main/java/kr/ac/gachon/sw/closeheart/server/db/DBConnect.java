@@ -795,4 +795,85 @@ public class DBConnect {
 		}
 		return false;
 	}
+
+	/*
+	 * 비밀번호 초기화
+	 * @author Minjae Seon
+	 * @param id 유저 ID
+	 * @param newPassword 새 패스워드 (암호화)
+	 * @return 성공 여부
+	 */
+	public static boolean resetPassword(String id, String newPassword) {
+		Connection dbConnection = null;
+		try {
+			dbConnection = DBManager.getDBConnection();
+
+			// PreparedStatement 이용 Insert
+			PreparedStatement sessionStatement = dbConnection.prepareStatement("UPDATE account set user_pw = ? where user_id = ?");
+			sessionStatement.setString(1, newPassword);
+			sessionStatement.setString(2, id);
+
+			// 전송
+			int result = sessionStatement.executeUpdate();
+
+			return result >= 1;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return false;
+	}
+
+	/*
+	 * 비밀번호 찾기시 일치 정보 찾기
+	 * @author Minjae Seon
+	 * @param email 이메일
+	 * @param id 아이디
+	 * @param birthday 생년월일
+	 * @return boolean
+	 */
+	public static boolean checkFindPWInfo(String email, String id, String birthday) {
+		Connection dbConnection = null;
+		ResultSet rs = null;
+		try {
+			dbConnection = DBManager.getDBConnection();
+
+			// 가져올 Attribute List
+			ArrayList<String> attrList = new ArrayList<String>();
+			attrList.add("user_mail");
+
+			// Condition HashMap
+			HashMap<String, Object> conditionList = new HashMap<String, Object>();
+			conditionList.put("user_mail", email);
+			conditionList.put("user_id", id);
+			conditionList.put("user_birthday", birthday);
+
+			// SQL Select Query 전송
+			rs = DBManager.selectQuery(dbConnection, "account", attrList, conditionList);
+			if (rs.next()) {
+				return true;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return false;
+	}
 }

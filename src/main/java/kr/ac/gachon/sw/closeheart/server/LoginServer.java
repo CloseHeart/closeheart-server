@@ -13,6 +13,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
+import kr.ac.gachon.sw.closeheart.server.mail.MailSender;
 import kr.ac.gachon.sw.closeheart.server.util.Util;
 
 public class LoginServer extends Thread {
@@ -251,10 +252,21 @@ public class LoginServer extends Thread {
 		private void passwordResetHandler(JsonObject clientJson) throws Exception {
 			System.out.println(Util.createLogString("Login", socket.getInetAddress().getHostAddress(), "Password Reset Request"));
 			String email = clientJson.get("email").getAsString();
+			String id = clientJson.get("id").getAsString();
+			String birthday = clientJson.get("birthday").getAsString();
 
-			boolean checkEmail = DBConnect.emailCheck(email);
+			boolean checkInfo = DBConnect.checkFindPWInfo(email, id, birthday);
 
-			if(checkEmail) {
+			if(checkInfo) {
+				Random random = new Random();
+				int randomInt = random.nextInt() + 1;
+				String newPW = System.currentTimeMillis() + id + randomInt;
+				DBConnect.resetPassword(id, Util.encryptSHA512(newPW));
+				String contents = "안녕하세요. Closeheart입니다.<br>" +
+						"임시 비밀번호는 \"" + newPW + "\" 입니다.<br>" +
+						"로그인 후 비밀번호를 즉시 변경해주세요.<br><br>" +
+						"CloseHeart 팀.";
+				MailSender.sendMail(email, "임시 비밀번호 안내", contents);
 				out.println(Util.createSingleKeyValueJSON(200, "msg", "success"));
 			}
 			else {
