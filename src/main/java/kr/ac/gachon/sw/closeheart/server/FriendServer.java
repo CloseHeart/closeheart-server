@@ -184,42 +184,55 @@ public class FriendServer extends Thread {
                         else if(requestCode == 305) {
                             friendReceiveHandler(jsonObject);
                         }
-                        /* 닉네임 변경 처리 */
+                        /* 개인 정보 변경 변경 처리 */
                         else if(requestCode == 306){
-                            String friendRequestNick = jsonObject.get("requestNick").getAsString();
                             String friendRequestID = jsonObject.get("requestID").getAsString();
-                            if(!friendRequestNick.isEmpty()){
-                                if(DBConnect.nickCheck(friendRequestNick)){
-                                    if(DBConnect.resetNickname(friendRequestID, friendRequestNick)){
-                                        out.println(Util.createSingleKeyValueJSON(200, "msg", "nickreset"));
-                                        System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Reset Nickname Success!"));
+                            // 닉네임 변경
+                            if(jsonObject.keySet().contains("requestNick")){
+                                String friendRequestNick = jsonObject.get("requestNick").getAsString();
+                                if(!friendRequestNick.isEmpty()){
+                                    if(DBConnect.nickCheck(friendRequestNick)){
+                                        if(DBConnect.resetNickname(friendRequestID, friendRequestNick)){
+                                            out.println(Util.createSingleKeyValueJSON(200, "msg", "nickreset"));
+                                            System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Reset Nickname Success!"));
+                                        }
+                                        else{
+                                            out.println(Util.createSingleKeyValueJSON(500, "msg", "nickreset"));
+                                        }
                                     }
                                     else{
-                                        out.println(Util.createSingleKeyValueJSON(500, "msg", "nickreset"));
+                                        out.println(Util.createSingleKeyValueJSON(401, "msg", "nickreset"));
                                     }
                                 }
                                 else{
-                                    out.println(Util.createSingleKeyValueJSON(401, "msg", "nickreset"));
+                                    out.println(Util.createSingleKeyValueJSON(400, "msg", "nickreset"));
                                 }
                             }
-                            else{
-                                out.println(Util.createSingleKeyValueJSON(400, "msg", "nickreset"));
+                            // 상태 메세지 변경
+                            if(jsonObject.keySet().contains("requestMSG")){
+                                String friendRequestMSG = jsonObject.get("requestMSG").getAsString();
+                                if(DBConnect.resetStatusmsg(friendRequestID, friendRequestMSG)){
+                                    out.println(Util.createSingleKeyValueJSON(200, "msg", "statusmsgreset"));
+                                    System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Reset StatusMSG Success!"));
+                                }
+                                else{
+                                    out.println(Util.createSingleKeyValueJSON(500, "msg", "statusmsgreset"));
+                                }
                             }
-                        }
-                        /* 상태 메세지 설정 */
-                        else if(requestCode == 307){
-                            String friendRequestMSG = jsonObject.get("requestMSG").getAsString();
-                            String friendRequestID = jsonObject.get("requestID").getAsString();
-                            if(DBConnect.resetStatusmsg(friendRequestID, friendRequestMSG)){
-                                out.println(Util.createSingleKeyValueJSON(200, "msg", "statusmsgreset"));
-                                System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Reset StatusMSG Success!"));
-                            }
-                            else{
-                                out.println(Util.createSingleKeyValueJSON(500, "msg", "statusmsgreset"));
+                            // 생일 변경
+                            if(jsonObject.keySet().contains("requestBirth")){
+                                String friendRequestBirth = jsonObject.get("requestBirth").getAsString();
+                                if(DBConnect.resetBirthday(friendRequestID, friendRequestBirth)){
+                                    out.println(Util.createSingleKeyValueJSON(200, "msg", "birthdayreset"));
+                                    System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Reset birthday Success!"));
+                                }
+                                else{
+                                    out.println(Util.createSingleKeyValueJSON(500, "msg", "birthdayreset"));
+                                }
                             }
                         }
                         /* 비밀번호 변경 */
-                        else if(requestCode == 308){
+                        else if(requestCode == 307){
                             String friendRequestPW = jsonObject.get("requestPW").getAsString();
                             String friendRequestID = jsonObject.get("requestID").getAsString();
                             if(DBConnect.resetPassword(friendRequestID, friendRequestPW)){
@@ -228,19 +241,6 @@ public class FriendServer extends Thread {
                             }
                             else{
                                 out.println(Util.createSingleKeyValueJSON(500, "msg", "pwreset"));
-                            }
-                        }
-                        /* 생일 변경 */
-                        else if(requestCode == 309){
-                            String friendRequestBirth = jsonObject.get("requestBirth").getAsString();
-                            String friendRequestID = jsonObject.get("requestID").getAsString();
-
-                            if(DBConnect.resetBirthday(friendRequestID, friendRequestBirth)){
-                                out.println(Util.createSingleKeyValueJSON(200, "msg", "birthdayreset"));
-                                System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Reset birthday Success!"));
-                            }
-                            else{
-                                out.println(Util.createSingleKeyValueJSON(500, "msg", "birthdayreset"));
                             }
                         }
                     }
