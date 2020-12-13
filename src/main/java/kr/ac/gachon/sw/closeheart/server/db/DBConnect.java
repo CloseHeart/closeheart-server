@@ -486,6 +486,12 @@ public class DBConnect {
 		// DB 연결 수립
 		dbConnection = DBManager.getDBConnection();
 
+		/*
+			Friend Table Type 관련
+			type 0 = 현재 친구인 상태
+			type 1 = 내가 요청을 보낸 상태
+			type 2 = 상대방에게 요청을 받은 상태
+		*/
 		PreparedStatement sessionStatement = dbConnection.prepareStatement("INSERT INTO friend (user1_id, user2_id, type) values (?, ?, ?)");
 		sessionStatement.setString(1, myID); // 친구 요청을 보낸 유저 ID
 		sessionStatement.setString(2, requestID); // 요청을 받을 유저 ID
@@ -495,7 +501,7 @@ public class DBConnect {
 		// 반대로도 저장
 		sessionStatement.setString(1, requestID);
 		sessionStatement.setString(2, myID);
-		sessionStatement.setInt(3, 1);
+		sessionStatement.setInt(3, 2);
 		sessionStatement.addBatch();
 
 		// 전송
@@ -706,5 +712,87 @@ public class DBConnect {
 			}
 		}
 		return -1;
+	}
+
+
+	/*
+	 * 친구 수락 처리
+	 * @author Minjae Seon
+	 * @param userID 수락하는 유저 ID
+	 * @param targetUserID 상대 ID
+	 * @return 성공 여부
+	 */
+	public static boolean requestAccept(String userID, String targetUserID) {
+		Connection dbConnection = null;
+		try {
+			// DB 연결 수립
+			dbConnection = DBManager.getDBConnection();
+			// Insert Into SQL 작성
+			PreparedStatement preparedStatement = dbConnection.prepareStatement("update friend set type = 0 where (user1_id = ? and user2_id = ?) or (user1_id = ? and user2_id = ?)");
+
+			// 조건문
+			preparedStatement.setString(1, userID);
+			preparedStatement.setString(2, targetUserID);
+			preparedStatement.setString(3, targetUserID);
+			preparedStatement.setString(4, userID);
+
+			// SQL문 실행
+			preparedStatement.executeUpdate();
+
+			return true;
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return false;
+	}
+
+	/*
+	 * 친구 관계 삭제
+	 * @author Minjae Seon
+	 * @param userID 유저 ID
+	 * @param targetUserID 상대 ID
+	 * @return 성공 여부
+	 */
+	public static boolean removeFriendRelationship(String userID, String targetUserID) {
+		Connection dbConnection = null;
+		try {
+			// DB 연결 수립
+			dbConnection = DBManager.getDBConnection();
+			// Insert Into SQL 작성
+			PreparedStatement preparedStatement = dbConnection.prepareStatement("delete from friend where (user1_id = ? and user2_id = ?) or (user1_id = ? and user2_id = ?)");
+
+			// 조건문
+			preparedStatement.setString(1, userID);
+			preparedStatement.setString(2, targetUserID);
+			preparedStatement.setString(3, targetUserID);
+			preparedStatement.setString(4, userID);
+
+			// SQL문 실행
+			preparedStatement.executeUpdate();
+			return true;
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return false;
 	}
 }
