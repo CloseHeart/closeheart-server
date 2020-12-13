@@ -875,4 +875,94 @@ public class DBConnect {
 		}
 		return false;
 	}
+	public static boolean resetNickname(String id, String newNickname) {
+		Connection dbConnection = null;
+		try {
+			dbConnection = DBManager.getDBConnection();
+
+			// PreparedStatement 이용 Insert
+
+			PreparedStatement sessionStatement = dbConnection.prepareStatement("UPDATE account set user_nick = ? where user_id = ?");
+			sessionStatement.setString(1, newNickname);
+			sessionStatement.setString(2, id);
+
+			// 전송
+			int result = sessionStatement.executeUpdate();
+
+			return result >= 1;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return false;
+	}
+	public static boolean resetStatusmsg(String id, String newStatusmsg) {
+		Connection dbConnection = null;
+		try {
+			dbConnection = DBManager.getDBConnection();
+
+			// PreparedStatement 이용 Insert
+
+			PreparedStatement sessionStatement = dbConnection.prepareStatement("UPDATE account set user_statusmsg = ? where user_id = ?");
+			sessionStatement.setString(1, newStatusmsg);
+			sessionStatement.setString(2, id);
+
+			// 전송
+			int result = sessionStatement.executeUpdate();
+
+			return result >= 1;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return false;
+	}
+	public static boolean resetBirthday(String id, String newBirthday) {
+		Connection dbConnection = null;
+		try {
+			dbConnection = DBManager.getDBConnection();
+
+			// PreparedStatement 이용 Insert
+
+			PreparedStatement sessionStatement = dbConnection.prepareStatement("UPDATE account set user_birthday = ? where user_id = ?");
+			sessionStatement.setString(1, newBirthday);
+			sessionStatement.setString(2, id);
+
+			// 전송
+			int result = sessionStatement.executeUpdate();
+
+			return result >= 1;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return false;
+	}
 }
