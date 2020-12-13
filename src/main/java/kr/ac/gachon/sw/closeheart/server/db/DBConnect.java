@@ -14,20 +14,34 @@ public class DBConnect {
 	 * @return boolean
 	 */
 	public static boolean createUser(String id, String email, String password, String nickName, String birthday) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
-			HashMap<String, Object> newUser = new HashMap<String, Object>();
-			newUser.put("user_id", id);
-			newUser.put("user_mail", email);
-			newUser.put("user_pw", password);
-			newUser.put("user_nick", nickName);
-			newUser.put("user_birthday", birthday);
+			// PreparedStatement 이용 Insert
+			PreparedStatement sessionStatement = dbConnection.prepareStatement("INSERT INTO account (user_id, user_mail, user_pw, user_nick, user_birthday, user_lasttime) values (?, ?, ?, ?, ?, ?)");
+			sessionStatement.setString(1, id);
+			sessionStatement.setString(2, email);
+			sessionStatement.setString(3, password);
+			sessionStatement.setString(4, nickName);
+			sessionStatement.setString(5, birthday);
+			sessionStatement.setTimestamp(6, new Timestamp(System.currentTimeMillis()));
 
-			return DBManager.insertQuery(dbConnection, "account", newUser);
+			// 전송
+			int result = sessionStatement.executeUpdate();
+
+			return result >= 1;
 
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
 		}
 		return false;
 	}
@@ -39,7 +53,7 @@ public class DBConnect {
 	 * @return boolean
 	 */
 	public static boolean loginMatchUser(String id, String password) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -62,6 +76,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 	
@@ -71,7 +94,7 @@ public class DBConnect {
 	 * @return ResultSet
 	 */
 	public static ResultSet AccessSessionWithToken(String token) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -97,6 +120,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return rs;
 	}
 	
@@ -106,7 +138,7 @@ public class DBConnect {
 	 * @return ResultSet
 	 */
 	public static ResultSet AccessAccountWithId(String user_id) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -130,6 +162,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return rs;
 	}
 
@@ -139,7 +180,7 @@ public class DBConnect {
 	 * @return ResultSet
 	 */
 	public static ResultSet AccessAccountWithIdAndType(String user_id, int type) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -162,6 +203,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return rs;
 	}
 
@@ -171,7 +221,7 @@ public class DBConnect {
 	 * @return ResultSet
 	 */
 	public static ResultSet AccessAccountWithFriendId(String user_id) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -194,6 +244,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return rs;
 	}
 
@@ -203,7 +262,7 @@ public class DBConnect {
 	 * @return boolean
 	 */
 	public static boolean isValidUser(String userID) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -224,6 +283,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -235,7 +303,7 @@ public class DBConnect {
 	 * @return boolean
 	 */
 	public static boolean idCheck(String id) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -256,6 +324,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -266,7 +343,7 @@ public class DBConnect {
 	 * @return boolean
 	 */
 	public static boolean emailCheck(String email) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -287,6 +364,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -297,7 +383,7 @@ public class DBConnect {
 	 * @return boolean
 	 */
 	public static boolean nickCheck(String nick) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -318,6 +404,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -330,7 +425,7 @@ public class DBConnect {
 	 * @return DB 쓰기 성공 여부
 	 */
 	public static boolean writeSession(String id, String token, String IP, Calendar expiredTimeInfo) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		try {
 			// DB 연결 수립
 			dbConnection = DBManager.getDBConnection();
@@ -349,6 +444,15 @@ public class DBConnect {
 			return result >= 1;
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
 		}
 		return false;
 	}
@@ -388,6 +492,8 @@ public class DBConnect {
 		// 전송
 		int[] result = sessionStatement.executeBatch();
 
+		dbConnection.close();
+
 		// 두 결과가 합쳐서 2 이상이면 true, 아니라면 false
 		return result[0] + result[1] >= 2;
 	}
@@ -400,7 +506,7 @@ public class DBConnect {
 	 * @return 유효 여부
 	 */
 	public static boolean isValidToken(String token, String clientIP) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			// DB 연결 수립
@@ -429,6 +535,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -440,7 +555,7 @@ public class DBConnect {
 	 * @return 성공 여부
 	 */
 	public static boolean removeToken(String token, String IP) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		try {
 			// DB 연결 수립
 			dbConnection = DBManager.getDBConnection();
@@ -454,6 +569,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -462,7 +586,7 @@ public class DBConnect {
 	 * @return 성공 여부
 	 */
 	public static boolean removeExpiredToken() {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		try {
 			// DB 연결 수립
 			dbConnection = DBManager.getDBConnection();
@@ -483,6 +607,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();;
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -493,7 +626,7 @@ public class DBConnect {
 	 * @return 성공 여부
 	 */
 	public static boolean setCovid19Info(String date, int decideCnt) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		try {
 			// DB 연결 수립
 			dbConnection = DBManager.getDBConnection();
@@ -512,6 +645,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -521,7 +663,7 @@ public class DBConnect {
 	 * @return 확진자 수 (실패시 -1)
 	 */
 	public static int getCovid19Info(String date) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -544,6 +686,15 @@ public class DBConnect {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
 		}
 		return -1;
 	}
