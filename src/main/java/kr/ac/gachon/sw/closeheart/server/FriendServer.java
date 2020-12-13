@@ -9,9 +9,11 @@ import org.json.JSONObject;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
@@ -51,7 +53,6 @@ public class FriendServer extends Thread {
         private Scanner in;
         private PrintWriter out;
         private User user = null;
-        private User userFriend = null;
 
         public friendServerHandler(Socket socket) {
             this.socket = socket;
@@ -87,6 +88,11 @@ public class FriendServer extends Thread {
                                 userInfo.put(user.getUserID(), out);
                             }
                         }
+                        // 이외 코드는 전부 다 인증 후에만 처리해야함
+                        else {
+                            // 403 전송
+                            out.println(Util.createSingleKeyValueJSON(403, "msg", "Not Authorization"));
+                        }
                     }
                     // User 정보가 있을 경우 처리
                     else {
@@ -111,8 +117,12 @@ public class FriendServer extends Thread {
                                     try {
                                         boolean isSuccessFriendRequest = sendFriendRequest(friendRequestID);
                                         // 전송 성공하면 200, 실패하면 500
-                                        if (isSuccessFriendRequest)
+                                        if (isSuccessFriendRequest) {
                                             out.println(Util.createSingleKeyValueJSON(200, "msg", "friendrequest"));
+
+                                            /* 친구 온라인이면 여기서 요청 메시지 전송하기 ! */
+
+                                        }
                                         else out.println(Util.createSingleKeyValueJSON(500, "msg", "friendrequest"));
                                     } catch (SQLIntegrityConstraintViolationException intgE) {
                                         // 제약 조건 에러 발생이면 이미 친구이거나 전송된 요청이므로 401
@@ -128,37 +138,38 @@ public class FriendServer extends Thread {
                                 out.println(Util.createSingleKeyValueJSON(400, "msg", "friendrequest"));
                             }
                         }
-                    }
+                        /* Covid-19 기능 처리*/
+                        else if(requestCode == 303){
+                            try {
+                                LocalDate currentDate = LocalDate.now();
+                                JsonObject currentCovidInfo = Covid19API.getCovid19Data(currentDate);
 
+                                int newCnt = Covid19API.getCovid19NewDecide(currentCovidInfo);  // 신규 확진자 수
+                                int currDecideCnd = Covid19API.getCurrentCovid19Decide(currentCovidInfo);   // 오늘 확진자 수
+                                HashMap<String, Object> covidInfo = new HashMap<>();
+                                covidInfo.put("msg", "covid19");
+                                covidInfo.put("newCnt", String.valueOf(newCnt));
+                                covidInfo.put("currDecideCnd", String.valueOf(currDecideCnd));
+                                out.println(Util.createJSON(200, covidInfo));
+
+                                System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Covid-19 Data Send Success!"));
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                System.out.println("Conversion Failed!" + e.getMessage());
+                                out.println(Util.createSingleKeyValueJSON(500, "msg", "covid19"));
+                            }
+                        }
+                        /* 친구 새로고침 처리 */
+                        else if(requestCode == 304) {
+                            refreshHandle();
+                        }
+                    }
                     /* 로그아웃 처리 */
                     if(requestCode == 301) {
                         String userToken = jsonObject.get("token").getAsString();
                         boolean result = DBConnect.removeToken(userToken, socket.getInetAddress().getHostAddress());
                         out.println(Util.createSingleKeyValueJSON(301, "msg", "logout"));
                         System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Logout - Token Delete : " + result));
-                    }
-
-                    /* Covid-19 기능 처리*/
-                    if(requestCode == 303){
-                        try {
-                            LocalDate currentDate = LocalDate.now();
-                            JsonObject currentCovidInfo = Covid19API.getCovid19Data(currentDate);
-
-                            int newCnt = Covid19API.getCovid19NewDecide(currentCovidInfo);  // 신규 확진자 수
-                            int currDecideCnd = Covid19API.getCurrentCovid19Decide(currentCovidInfo);   // 오늘 확진자 수
-                            HashMap<String, Object> covidInfo = new HashMap<>();
-                            covidInfo.put("msg", "covid19");
-                            covidInfo.put("newCnt", String.valueOf(newCnt));
-                            covidInfo.put("currDecideCnd", String.valueOf(currDecideCnd));
-                            out.println(Util.createJSON(200, covidInfo));
-
-                            System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Covid-19 Data Send Success!"));
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            System.out.println("Conversion Failed!" + e.getMessage());
-                            out.println(Util.createSingleKeyValueJSON(500, "msg", "covid19"));
-                        }
-
                     }
                 }
             }
@@ -176,82 +187,39 @@ public class FriendServer extends Thread {
          * @throws Exception 에러 예외처리
          */
         private boolean loginHandle(JsonObject jsonObject) throws Exception {
-            String user_id = null;
-            String user_mail = null;
-            String user_nick = null;
-            String user_birthday = null;
-            String user_statusmsg = null;
             String userToken = jsonObject.get("token").getAsString();
 
-            ResultSet rs_session = DBConnect.AccessSessionWithToken(userToken);
-            // 정상적으로 session테이블에 있는 user_id값 받아왔다면
-            if(rs_session != null) {
-                if (rs_session.next()) {
-                    user_id = rs_session.getString(1);
-
-                    // 얻어온 값으로 account 조회해서  모든 user info값 user객체에 저장
-                    ResultSet rs_account = DBConnect.AccessAccountWithId(user_id);
-                    if (rs_account != null) {
-                        if (rs_account.next()) {
-                            user_mail = rs_account.getString(1);
-                            user_nick = rs_account.getString(2);
-                            user_birthday = rs_account.getString(3);
-                            user_statusmsg = rs_account.getString(4);
-                        }
-
-                        user = new User(userToken, user_id, user_nick, user_statusmsg, null);
-
-                        String userFriend_id = null;
-                        String userFriend_nick = null;
-                        String userFriend_statusmsg = null;
-
-                        JsonArray friendArray = new JsonArray();
-                        // friend 테이블의 행 가져옴
-                        ResultSet rs_friend = DBConnect.AccessAccountWithIdAndType(user.getUserID(),0);
-                        if(rs_friend != null) {
-                            while (rs_friend.next()) {
-                                // user의 친구 id 값 추출
-                                userFriend_id = rs_friend.getString(1);
-
-                                ResultSet friendList = DBConnect.AccessAccountWithFriendId(userFriend_id);
-                                if (friendList != null) {
-                                    if (friendList.next()) {
-                                        userFriend_nick = friendList.getString(1);
-                                        userFriend_statusmsg = friendList.getString(2);
-                                        User userFriend = new User(userFriend_id, userFriend_nick, userFriend_statusmsg, userInfo.containsKey(userFriend_id));
-                                        friendArray.add(new Gson().toJson(userFriend, User.class));
-                                    }
-                                }
-                            }
-                        }
-
-                        // 서버로 유저 정보 전송
-                        HashMap<String, Object> userInfoMap = new HashMap<>();
-                        userInfoMap.put("id", user_id);
-                        userInfoMap.put("nick", user_nick);
-                        userInfoMap.put("userMsg", user_statusmsg);
-                        userInfoMap.put("friend", friendArray);
-                        out.println(Util.createJSON(200, userInfoMap));
-                    }
-                }
-            }
-            else {
-                out.println(Util.createSingleKeyValueJSON(403, "msg", "Token Not Valid!"));
-                in.close();
-                out.close();
-                socket.close();
-                return false;
-            }
+            user = DBConnect.AccessSessionWithToken(userToken);
 
             // 정보 로드 실패시
             if(user == null) {
                 // 에러 발송 후 서버랑 연결 해제
-                out.println(Util.createSingleKeyValueJSON(400, "msg", "Can't Find User Infomation!"));
+                out.println(Util.createSingleKeyValueJSON(403, "msg", "Can't Find User Infomation!"));
                 in.close();
                 out.close();
                 socket.close();
                 return false;
             }
+
+            JsonArray friendArray = new JsonArray();
+            // friend 테이블의 행 가져옴
+            ArrayList<User> friendUsers = DBConnect.AccessFriendTable(user.getUserID(),0);
+
+            for (User friendUser : friendUsers) {
+                if(userInfo.containsKey(friendUser.getUserID())) {
+                    friendUser.setOnline(true);
+                }
+                friendArray.add(new Gson().toJson(friendUser, User.class));
+            }
+
+            // 서버로 유저 정보 전송
+            HashMap<String, Object> userInfoMap = new HashMap<>();
+            userInfoMap.put("id", user.getUserID());
+            userInfoMap.put("nick", user.getUserNick());
+            userInfoMap.put("userMsg", user.getUserMsg());
+            userInfoMap.put("friend", friendArray.toString());
+            out.println(Util.createJSON(200, userInfoMap));
+
             return true;
         }
 
@@ -281,6 +249,34 @@ public class FriendServer extends Thread {
             boolean isSuccessRequest = DBConnect.requestFriend(user.getUserToken(), requestID);
             if(isSuccessRequest) return true;
             else return false;
+        }
+
+        /*
+         * 친구 새로 고침 Handler
+         * @author Minjae Seon
+         * @return Boolean
+         */
+        private void refreshHandle() {
+            HashMap<String, Object> userInfoMap = new HashMap<>();
+            try {
+                JsonArray friendArray = new JsonArray();
+                // friend 테이블의 행 가져옴
+                ArrayList<User> friendUsers = DBConnect.AccessFriendTable(user.getUserID(), 0);
+                for (User friendUser : friendUsers) {
+                    friendArray.add(new Gson().toJson(friendUser, User.class));
+                }
+
+                // 서버로 유저 정보 전송
+                userInfoMap.put("msg", "friendrefresh");
+                userInfoMap.put("friend", friendArray);
+                out.println(Util.createJSON(200, userInfoMap));
+            }
+            catch (Exception e) {
+                // 에러 알림
+                e.printStackTrace();
+                userInfoMap.put("msg", "friendrefresh");
+                out.println(Util.createJSON(500, userInfoMap));
+            }
         }
     }
 }

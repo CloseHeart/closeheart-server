@@ -1,5 +1,8 @@
 package kr.ac.gachon.sw.closeheart.server.db;
 
+import com.google.gson.Gson;
+import kr.ac.gachon.sw.closeheart.server.object.User;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -88,14 +91,15 @@ public class DBConnect {
 		return false;
 	}
 	
-	/* 토큰이용해 세션테이블에 액세스하는 함수
-	 * @author Taehyun Park
+	/* 토큰 이용해 세션테이블에 액세스해 유저 정보 얻어오는 함수
+	 * @author Taehyun Park, Minjae Seon
 	 * @param token 토큰
-	 * @return ResultSet
+	 * @return User
 	 */
-	public static ResultSet AccessSessionWithToken(String token) {
+	public static User AccessSessionWithToken(String token) {
 		Connection dbConnection = null;
 		ResultSet rs = null;
+		User user = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
 			
@@ -110,12 +114,16 @@ public class DBConnect {
 			
 			// SQL Select Query 전송
 			rs = DBManager.selectQuery(dbConnection, "session", attrList, conditionList);
+
 			if (rs.next()) {
 				// 만료체크
 				Timestamp expiredTime = rs.getTimestamp("expiredTime");
 				if(expiredTime.getTime() < System.currentTimeMillis()) return null;
-				rs.beforeFirst();
-				return rs;
+
+				String user_id = rs.getString(1);
+
+				// 얻어온 값으로 account 조회해서  모든 user info값 user객체에 저장
+				user = DBConnect.AccessAccountWithId(token, user_id);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -129,7 +137,7 @@ public class DBConnect {
 				}
 			}
 		}
-		return rs;
+		return user;
 	}
 	
 	/* 유저 아이디를 이용해 계정 테이블에 액세스하는 함수
@@ -137,9 +145,10 @@ public class DBConnect {
 	 * @param user_id 유저 아이디
 	 * @return ResultSet
 	 */
-	public static ResultSet AccessAccountWithId(String user_id) {
+	public static User AccessAccountWithId(String token, String user_id) {
 		Connection dbConnection = null;
 		ResultSet rs = null;
+		User user = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
 			
@@ -149,15 +158,17 @@ public class DBConnect {
 			attrList.add("user_nick");
 			attrList.add("user_birthday");
 			attrList.add("user_statusmsg");
+
 			// Condition HashMap
 			HashMap<String, Object> conditionList = new HashMap<String, Object>();
 			conditionList.put("user_id", user_id);
 			
 			// SQL Select Query 전송
 			rs = DBManager.selectQuery(dbConnection, "account", attrList, conditionList);
-			if (rs.next()) {
-				rs.beforeFirst();
-				return rs;
+			if (rs != null) {
+				if (rs.next()) {
+					user = new User(token, user_id, rs.getString(2), rs.getString(4), null);
+				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -171,17 +182,18 @@ public class DBConnect {
 				}
 			}
 		}
-		return rs;
+		return user;
 	}
 
 	/* 본인 user_id이고 type이 0인 friend table의 행 얻어오는 함수
-	 * @author Taehyun Park
+	 * @author Taehyun Park, Minjae Seon
 	 * @param  user_id 유저 아이디
-	 * @return ResultSet
+	 * @return ArrayList<User>
 	 */
-	public static ResultSet AccessAccountWithIdAndType(String user_id, int type) {
+	public static ArrayList<User> AccessFriendTable(String user_id, int type) {
 		Connection dbConnection = null;
 		ResultSet rs = null;
+		ArrayList<User> users = new ArrayList<>();
 		try {
 			dbConnection = DBManager.getDBConnection();
 
@@ -196,9 +208,10 @@ public class DBConnect {
 
 			// SQL Select Query 전송
 			rs = DBManager.selectQuery(dbConnection, "friend", attrList, conditionList);
-			if (rs.next()) {
-				rs.beforeFirst();
-				return rs;
+			while (rs.next()) {
+				// user의 친구 id 값 추출
+				String userFriend_id = rs.getString(1);
+				users.add(DBConnect.AccessAccountWithFriendId(userFriend_id));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -212,17 +225,18 @@ public class DBConnect {
 				}
 			}
 		}
-		return rs;
+		return users;
 	}
 
 	/* 친구 유저 아이디 값을 이용해 계정 테이블에 액세스하는 함수
 	 * @author Taehyun Park
 	 * @param user_id 유저 아이디(친구 아이디값)
-	 * @return ResultSet
+	 * @return User
 	 */
-	public static ResultSet AccessAccountWithFriendId(String user_id) {
+	public static User AccessAccountWithFriendId(String user_id) {
 		Connection dbConnection = null;
 		ResultSet rs = null;
+		User user = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
 
@@ -238,8 +252,7 @@ public class DBConnect {
 			// SQL Select Query 전송
 			rs = DBManager.selectQuery(dbConnection, "account", attrList, conditionList);
 			if (rs.next()) {
-				rs.beforeFirst();
-				return rs;
+				user = new User(user_id, rs.getString(1), rs.getString(2), false);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -253,7 +266,7 @@ public class DBConnect {
 				}
 			}
 		}
-		return rs;
+		return user;
 	}
 
 	/* 존재하는 유저인지 체크
@@ -466,12 +479,8 @@ public class DBConnect {
 	 */
 	public static boolean requestFriend(String token, String requestID) throws Exception {
 		// 토큰으로 아이디 가져오기
-		String myID = null;
-		ResultSet getUserIDSQL = AccessSessionWithToken(token);
-		if (getUserIDSQL.next()) {
-			myID = getUserIDSQL.getString("user_id");
-		}
-		else return false;
+		User user = AccessSessionWithToken(token);
+		String myID = user.getUserID();
 
 		Connection dbConnection;
 		// DB 연결 수립
