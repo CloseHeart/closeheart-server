@@ -12,6 +12,7 @@ import java.net.Socket;
 import java.sql.ResultSet;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
@@ -139,18 +140,28 @@ public class FriendServer extends Thread {
                     }
 
                     /* Covid-19 기능 처리*/
-                    if(requestCode == 303){
+                    if (requestCode == 303) {
                         try {
                             LocalDate currentDate = LocalDate.now();
-                            JsonObject currentCovidInfo = Covid19API.getCovid19Data(currentDate);
+                            LocalTime currentTime = LocalTime.now();
+                            if(currentTime.getHour() < 11 && currentTime.getMinute() < 30) currentDate =  currentDate.minusDays(1); // 코로나 업데이트 시간 전
+                            int newCnt, currDecideCnd;
+                            if (Covid19API.isCovid19Data(currentDate)) {
+                                int agoCnt = DBConnect.getCovid19Info(currentDate.minusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE));   // 어제 확진자 수
+                                currDecideCnd = DBConnect.getCovid19Info(currentDate.format(DateTimeFormatter.BASIC_ISO_DATE));   // 오늘 확진자 수
+                                newCnt = currDecideCnd - agoCnt;  // 신규 확진자 수
+                            } else {
+                                JsonObject currentCovidInfo = Covid19API.getCovid19Data(currentDate);
 
-                            int newCnt = Covid19API.getCovid19NewDecide(currentCovidInfo);  // 신규 확진자 수
-                            int currDecideCnd = Covid19API.getCurrentCovid19Decide(currentCovidInfo);   // 오늘 확진자 수
+                                newCnt = Covid19API.getCovid19NewDecide(currentCovidInfo);  // 신규 확진자 수
+                                currDecideCnd = Covid19API.getCurrentCovid19Decide(currentCovidInfo);   // 오늘 확진자 수
+                            }
                             HashMap<String, Object> covidInfo = new HashMap<>();
                             covidInfo.put("msg", "covid19");
                             covidInfo.put("newCnt", String.valueOf(newCnt));
                             covidInfo.put("currDecideCnd", String.valueOf(currDecideCnd));
                             out.println(Util.createJSON(200, covidInfo));
+
 
                             System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Covid-19 Data Send Success!"));
                         } catch (Exception e) {
