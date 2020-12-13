@@ -1,5 +1,8 @@
 package kr.ac.gachon.sw.closeheart.server.db;
 
+import com.google.gson.Gson;
+import kr.ac.gachon.sw.closeheart.server.object.User;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -14,20 +17,34 @@ public class DBConnect {
 	 * @return boolean
 	 */
 	public static boolean createUser(String id, String email, String password, String nickName, String birthday) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
-			HashMap<String, Object> newUser = new HashMap<String, Object>();
-			newUser.put("user_id", id);
-			newUser.put("user_mail", email);
-			newUser.put("user_pw", password);
-			newUser.put("user_nick", nickName);
-			newUser.put("user_birthday", birthday);
+			// PreparedStatement 이용 Insert
+			PreparedStatement sessionStatement = dbConnection.prepareStatement("INSERT INTO account (user_id, user_mail, user_pw, user_nick, user_birthday, user_lasttime) values (?, ?, ?, ?, ?, ?)");
+			sessionStatement.setString(1, id);
+			sessionStatement.setString(2, email);
+			sessionStatement.setString(3, password);
+			sessionStatement.setString(4, nickName);
+			sessionStatement.setString(5, birthday);
+			sessionStatement.setTimestamp(6, new Timestamp(System.currentTimeMillis()));
 
-			return DBManager.insertQuery(dbConnection, "account", newUser);
+			// 전송
+			int result = sessionStatement.executeUpdate();
+
+			return result >= 1;
 
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
 		}
 		return false;
 	}
@@ -39,7 +56,7 @@ public class DBConnect {
 	 * @return boolean
 	 */
 	public static boolean loginMatchUser(String id, String password) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -62,17 +79,27 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 	
-	/* 토큰이용해 세션테이블에 액세스하는 함수
-	 * @author Taehyun Park
+	/* 토큰 이용해 세션테이블에 액세스해 유저 정보 얻어오는 함수
+	 * @author Taehyun Park, Minjae Seon
 	 * @param token 토큰
-	 * @return ResultSet
+	 * @return User
 	 */
-	public static ResultSet AccessSessionWithToken(String token) {
-		Connection dbConnection;
+	public static User AccessSessionWithToken(String token) {
+		Connection dbConnection = null;
 		ResultSet rs = null;
+		User user = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
 			
@@ -87,17 +114,30 @@ public class DBConnect {
 			
 			// SQL Select Query 전송
 			rs = DBManager.selectQuery(dbConnection, "session", attrList, conditionList);
+
 			if (rs.next()) {
 				// 만료체크
 				Timestamp expiredTime = rs.getTimestamp("expiredTime");
 				if(expiredTime.getTime() < System.currentTimeMillis()) return null;
-				rs.beforeFirst();
-				return rs;
+
+				String user_id = rs.getString(1);
+
+				// 얻어온 값으로 account 조회해서  모든 user info값 user객체에 저장
+				user = DBConnect.AccessAccountWithId(token, user_id);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return rs;
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return user;
 	}
 	
 	/* 유저 아이디를 이용해 계정 테이블에 액세스하는 함수
@@ -105,9 +145,10 @@ public class DBConnect {
 	 * @param user_id 유저 아이디
 	 * @return ResultSet
 	 */
-	public static ResultSet AccessAccountWithId(String user_id) {
-		Connection dbConnection;
+	public static User AccessAccountWithId(String token, String user_id) {
+		Connection dbConnection = null;
 		ResultSet rs = null;
+		User user = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
 			
@@ -117,30 +158,42 @@ public class DBConnect {
 			attrList.add("user_nick");
 			attrList.add("user_birthday");
 			attrList.add("user_statusmsg");
+
 			// Condition HashMap
 			HashMap<String, Object> conditionList = new HashMap<String, Object>();
 			conditionList.put("user_id", user_id);
 			
 			// SQL Select Query 전송
 			rs = DBManager.selectQuery(dbConnection, "account", attrList, conditionList);
-			if (rs.next()) {
-				rs.beforeFirst();
-				return rs;
+			if (rs != null) {
+				if (rs.next()) {
+					user = new User(token, user_id, rs.getString(2), rs.getString(4), null);
+				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return rs;
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return user;
 	}
 
 	/* 본인 user_id이고 type이 0인 friend table의 행 얻어오는 함수
-	 * @author Taehyun Park
+	 * @author Taehyun Park, Minjae Seon
 	 * @param  user_id 유저 아이디
-	 * @return ResultSet
+	 * @return ArrayList<User>
 	 */
-	public static ResultSet AccessAccountWithIdAndType(String user_id, int type) {
-		Connection dbConnection;
+	public static ArrayList<User> AccessFriendTable(String user_id, int type) {
+		Connection dbConnection = null;
 		ResultSet rs = null;
+		ArrayList<User> users = new ArrayList<>();
 		try {
 			dbConnection = DBManager.getDBConnection();
 
@@ -155,24 +208,35 @@ public class DBConnect {
 
 			// SQL Select Query 전송
 			rs = DBManager.selectQuery(dbConnection, "friend", attrList, conditionList);
-			if (rs.next()) {
-				rs.beforeFirst();
-				return rs;
+			while (rs.next()) {
+				// user의 친구 id 값 추출
+				String userFriend_id = rs.getString(1);
+				users.add(DBConnect.AccessAccountWithFriendId(userFriend_id));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return rs;
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return users;
 	}
 
 	/* 친구 유저 아이디 값을 이용해 계정 테이블에 액세스하는 함수
 	 * @author Taehyun Park
 	 * @param user_id 유저 아이디(친구 아이디값)
-	 * @return ResultSet
+	 * @return User
 	 */
-	public static ResultSet AccessAccountWithFriendId(String user_id) {
-		Connection dbConnection;
+	public static User AccessAccountWithFriendId(String user_id) {
+		Connection dbConnection = null;
 		ResultSet rs = null;
+		User user = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
 
@@ -188,13 +252,21 @@ public class DBConnect {
 			// SQL Select Query 전송
 			rs = DBManager.selectQuery(dbConnection, "account", attrList, conditionList);
 			if (rs.next()) {
-				rs.beforeFirst();
-				return rs;
+				user = new User(user_id, rs.getString(1), rs.getString(2), false);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return rs;
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return user;
 	}
 
 	/* 존재하는 유저인지 체크
@@ -203,7 +275,7 @@ public class DBConnect {
 	 * @return boolean
 	 */
 	public static boolean isValidUser(String userID) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -224,6 +296,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -235,7 +316,7 @@ public class DBConnect {
 	 * @return boolean
 	 */
 	public static boolean idCheck(String id) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -256,6 +337,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -266,7 +356,7 @@ public class DBConnect {
 	 * @return boolean
 	 */
 	public static boolean emailCheck(String email) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -287,6 +377,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -297,7 +396,7 @@ public class DBConnect {
 	 * @return boolean
 	 */
 	public static boolean nickCheck(String nick) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -318,6 +417,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -330,7 +438,7 @@ public class DBConnect {
 	 * @return DB 쓰기 성공 여부
 	 */
 	public static boolean writeSession(String id, String token, String IP, Calendar expiredTimeInfo) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		try {
 			// DB 연결 수립
 			dbConnection = DBManager.getDBConnection();
@@ -350,6 +458,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -362,12 +479,8 @@ public class DBConnect {
 	 */
 	public static boolean requestFriend(String token, String requestID) throws Exception {
 		// 토큰으로 아이디 가져오기
-		String myID = null;
-		ResultSet getUserIDSQL = AccessSessionWithToken(token);
-		if (getUserIDSQL.next()) {
-			myID = getUserIDSQL.getString("user_id");
-		}
-		else return false;
+		User user = AccessSessionWithToken(token);
+		String myID = user.getUserID();
 
 		Connection dbConnection;
 		// DB 연결 수립
@@ -377,12 +490,21 @@ public class DBConnect {
 		sessionStatement.setString(1, myID); // 친구 요청을 보낸 유저 ID
 		sessionStatement.setString(2, requestID); // 요청을 받을 유저 ID
 		sessionStatement.setInt(3, 1); // 타입
+		sessionStatement.addBatch();
+
+		// 반대로도 저장
+		sessionStatement.setString(1, requestID);
+		sessionStatement.setString(2, myID);
+		sessionStatement.setInt(3, 1);
+		sessionStatement.addBatch();
 
 		// 전송
-		int result = sessionStatement.executeUpdate();
+		int[] result = sessionStatement.executeBatch();
 
-		// 1개 이상의 결과가 있다면 true, 아니라면 false
-		return result >= 1;
+		dbConnection.close();
+
+		// 두 결과가 합쳐서 2 이상이면 true, 아니라면 false
+		return result[0] + result[1] >= 2;
 	}
 
 	/*
@@ -393,7 +515,7 @@ public class DBConnect {
 	 * @return 유효 여부
 	 */
 	public static boolean isValidToken(String token, String clientIP) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			// DB 연결 수립
@@ -422,6 +544,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -433,7 +564,7 @@ public class DBConnect {
 	 * @return 성공 여부
 	 */
 	public static boolean removeToken(String token, String IP) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		try {
 			// DB 연결 수립
 			dbConnection = DBManager.getDBConnection();
@@ -447,6 +578,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -455,7 +595,7 @@ public class DBConnect {
 	 * @return 성공 여부
 	 */
 	public static boolean removeExpiredToken() {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		try {
 			// DB 연결 수립
 			dbConnection = DBManager.getDBConnection();
@@ -476,6 +616,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();;
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -486,7 +635,7 @@ public class DBConnect {
 	 * @return 성공 여부
 	 */
 	public static boolean setCovid19Info(String date, int decideCnt) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		try {
 			// DB 연결 수립
 			dbConnection = DBManager.getDBConnection();
@@ -505,6 +654,15 @@ public class DBConnect {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -514,7 +672,7 @@ public class DBConnect {
 	 * @return 확진자 수 (실패시 -1)
 	 */
 	public static int getCovid19Info(String date) {
-		Connection dbConnection;
+		Connection dbConnection = null;
 		ResultSet rs = null;
 		try {
 			dbConnection = DBManager.getDBConnection();
@@ -537,6 +695,15 @@ public class DBConnect {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
 		}
 		return -1;
 	}
