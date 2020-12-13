@@ -86,7 +86,7 @@ public class FriendServer extends Thread {
                                 break;
                             }
                             else {
-                                userInfo.put(user.getUserID(), out);
+                                if(!userInfo.containsValue(out)) userInfo.put(user.getUserID(), out);
                             }
                         }
                         // 이외 코드는 전부 다 인증 후에만 처리해야함
@@ -151,7 +151,7 @@ public class FriendServer extends Thread {
                             try {
                                 LocalDate currentDate = LocalDate.now();
                                 LocalTime currentTime = LocalTime.now();
-                                if(currentTime.getHour() < 11 && currentTime.getMinute() < 30) currentDate =  currentDate.minusDays(1); // 코로나 업데이트 시간 전
+                                if(currentTime.getHour() < 11) currentDate =  currentDate.minusDays(1); // 코로나 업데이트 시간 전
                                 int newCnt, currDecideCnd;
                               
                                 if (Covid19API.isCovid19Data(currentDate)) {
@@ -191,44 +191,40 @@ public class FriendServer extends Thread {
                             // 닉네임 변경
                             for(String key : jsonObject.keySet()){
                                 String value = jsonObject.get(key).getAsString();
-                                if(value.equals("requestNick")){
-                                    if(!value.isEmpty()){
-                                        if(DBConnect.nickCheck(value)){
-                                            if(!DBConnect.resetNickname(friendRequestID, value)){
-                                                out.println(Util.createSingleKeyValueJSON(500, "msg", "nickreset"));
-                                                error = true;
-                                                break;
-                                            }
-                                        }
-                                        else{
-                                            out.println(Util.createSingleKeyValueJSON(401, "msg", "nickreset"));
+                                if(key.equals("requestNick")) {
+                                    if (!DBConnect.nickCheck(value)) {
+                                        if (!DBConnect.resetNickname(friendRequestID, value)) {
                                             error = true;
                                             break;
                                         }
                                     }
-                                    else{
-                                        out.println(Util.createSingleKeyValueJSON(400, "msg", "nickreset"));
+                                    else {
                                         error = true;
                                         break;
                                     }
                                 }
-                                else if(value.equals("requestMSG")){
+                                else if(key.equals("requestMSG")){
                                     if(!DBConnect.resetStatusmsg(friendRequestID, value)){
-                                        out.println(Util.createSingleKeyValueJSON(500, "msg", "statusmsgreset"));
                                         error = true;
                                         break;
                                     }
                                 }
-                                else if(value.equals("requestBirth")){
+                                else if(key.equals("requestBirth")){
                                     if(!DBConnect.resetBirthday(friendRequestID, value)){
-                                        out.println(Util.createSingleKeyValueJSON(500, "msg", "birthdayreset"));
                                         error = true;
                                         break;
                                     }
                                 }
                             }
                             // for문 끝
-                            if(!error) System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Set personal info Success!"));
+                            if(!error) {
+                                out.println(Util.createSingleKeyValueJSON(200, "msg", "infochange"));
+                                System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Set personal info Success!"));
+                            }
+                            else {
+                                out.println(Util.createSingleKeyValueJSON(400, "msg", "infochange"));
+                                System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Set personal info Error!"));
+                            }
                         }
                         /* 비밀번호 변경 */
                         else if(requestCode == 307){
@@ -277,7 +273,7 @@ public class FriendServer extends Thread {
             // 정보 로드 실패시
             if(user == null) {
                 // 에러 발송 후 서버랑 연결 해제
-                out.println(Util.createSingleKeyValueJSON(403, "msg", "Can't Find User Infomation!"));
+                out.println(Util.createSingleKeyValueJSON(403, "msg", "getuserinfo"));
                 in.close();
                 out.close();
                 socket.close();
@@ -297,6 +293,7 @@ public class FriendServer extends Thread {
 
             // 서버로 유저 정보 전송
             HashMap<String, Object> userInfoMap = new HashMap<>();
+            userInfoMap.put("msg", "getuserinfo");
             userInfoMap.put("id", user.getUserID());
             userInfoMap.put("nick", user.getUserNick());
             userInfoMap.put("userMsg", user.getUserMsg());
