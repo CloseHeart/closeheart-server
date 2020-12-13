@@ -7,7 +7,8 @@ import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
 import kr.ac.gachon.sw.closeheart.server.object.User;
 import kr.ac.gachon.sw.closeheart.server.util.Util;
 import kr.ac.gachon.sw.closeheart.server.api.Covid19API;
-
+import org.json.JSONObject;
+import org.json.JSONArray;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -53,6 +54,7 @@ public class FriendServer extends Thread {
         private Scanner in;
         private PrintWriter out;
         private User user = null;
+        private User userFriend = null;
 
         public friendServerHandler(Socket socket) {
             this.socket = socket;
@@ -137,6 +139,55 @@ public class FriendServer extends Thread {
                         boolean result = DBConnect.removeToken(userToken, socket.getInetAddress().getHostAddress());
                         out.println(Util.createSingleKeyValueJSON(301, "msg", "logout"));
                         System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Logout - Token Delete : " + result));
+                    }
+
+                    /* 친구 기능 처리 */
+                    if(requestCode == 304){
+                        String userFriend_id = null;
+                        String userFriend_nick = null;
+                        String userFriend_statusmsg = null;
+
+                        // friend 테이블의 행 가져옴
+                        ResultSet rs_friend = DBConnect.AccessAccountWithIdAndType(user.getUserID(),0);
+                        if(rs_friend != null){
+                            if(rs_friend.next()){
+                                // user의 친구 id 값 추출
+                                userFriend_id = rs_friend.getString(1);
+
+                                ResultSet rs_account = DBConnect.AccessAccountWithFriendId(userFriend_id);
+                                if (rs_account != null) {
+                                    if (rs_account.next()) {
+                                        userFriend_nick = rs_account.getString(1);
+                                        userFriend_statusmsg = rs_account.getString(2);
+                                    }
+
+                                    // user 객체 생성 (친구 정보를 담아야 하므로), 온/오프라인 상태는 임시로 false값 지정.
+                                    User userFriend = new User(userFriend_id, userFriend_nick, userFriend_statusmsg, false);
+
+                                    // 친구 유저 객체 ArrayList로 add
+                                    user.setFriends(userFriend);
+
+                                    // JSONArray로 변환
+                                    JSONArray friendArray = new JSONArray();
+                                    for (int i = 0; i < user.getFriends().size(); i++){
+                                        JSONObject sObject = new JSONObject();
+                                        sObject.put("id",user.getFriends().get(i).getUserID());
+                                        sObject.put("nick",user.getFriends().get(i).getUserNick());
+                                        sObject.put("msg",user.getFriends().get(i).getUserMsg());
+                                        friendArray.put(sObject);
+                                    }
+
+                                    // 서버로 친구정보 전송
+                                    HashMap<String, String> userInfoMap = new HashMap<>();
+
+                                    // 친구리스트를 넘겨줄 때에는 JSONArray.tostring()으로
+                                    userInfoMap.put("msg", "friend");
+                                    userInfoMap.put("friendlist", friendArray.toString());
+
+                                    out.println(Util.createJSON(200, userInfoMap));
+                                }
+                            }
+                        }
                     }
 
                     /* Covid-19 기능 처리*/

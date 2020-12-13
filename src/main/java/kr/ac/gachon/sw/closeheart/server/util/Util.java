@@ -12,6 +12,7 @@ import java.util.Random;
 
 import com.google.gson.JsonObject;
 import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
+import org.json.JSONArray;
 
 public class Util {
 	/*

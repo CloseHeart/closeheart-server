@@ -52,8 +52,10 @@ public class User {
 	public void setUserMsg(String userMsg) {
 		this.userMsg = userMsg;
 	}
-
-	public void setFriends(ArrayList<User> friends) { this.friends = friends; }
+    // 친구 유저 객체 정보를 현재 본인 유저의 친구 ArrayList에 추가
+	public void setFriends(User friend) {
+		friends.add(friend);
+	}
 
 	public void setOnline(boolean isOnline) {
 		this.isOnline = isOnline;
