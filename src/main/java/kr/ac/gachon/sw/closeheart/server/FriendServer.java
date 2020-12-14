@@ -348,7 +348,6 @@ public class FriendServer extends Thread {
             userInfoMap.put("userMsg", user.getUserMsg());
             userInfoMap.put("userEmail", user.getUserEmail());
             userInfoMap.put("userBirthday", user.getUserBirthday());
-            userInfoMap.put("userLasttime", user.getUserLasttime());
             userInfoMap.put("friend", friendArray.toString());
             out.println(Util.createJSON(200, userInfoMap));
 
