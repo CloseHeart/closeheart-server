@@ -7,6 +7,7 @@ import kr.ac.gachon.sw.closeheart.server.util.Util;
 import kr.ac.gachon.sw.closeheart.server.api.Covid19API;
 import org.apache.commons.lang3.RandomStringUtils;
 import java.io.PrintWriter;
+import java.lang.reflect.Array;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.NumberFormat;
@@ -100,6 +101,7 @@ public class FriendServer extends Thread {
                             else {
                                 if(!userInfo.containsValue(out)) userInfo.put(user.getUserID(), out);
                                 sendRefreshAllFriends();
+                                loadOfflineRequest();
                             }
                         }
                         // 이외 코드는 전부 다 인증 후에만 처리해야함
@@ -559,6 +561,21 @@ public class FriendServer extends Thread {
                     // 새로고침 하라고 알리기
                     refreshHandler(userInfo.get(uid), uid);
                 }
+            }
+        }
+
+        /*
+         * 오프라인 중 받은 친구요청 처리
+         * @author Minjae Seon
+         */
+        private void loadOfflineRequest() {
+            ArrayList<User> requestList = DBConnect.getFriendRequest(user.getUserID());
+            for(User rqUser : requestList) {
+                HashMap<String, Object> friendRequestSendMap = new HashMap<>();
+                friendRequestSendMap.put("msg", "friendreceive");
+                friendRequestSendMap.put("userID", rqUser.getUserID());
+                friendRequestSendMap.put("userNick", rqUser.getUserNick());
+                out.println(Util.createJSON(200, friendRequestSendMap));
             }
         }
     }

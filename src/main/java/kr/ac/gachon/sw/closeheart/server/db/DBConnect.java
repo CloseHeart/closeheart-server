@@ -1073,4 +1073,39 @@ public class DBConnect {
 		return false;
 	}
 
+	/*
+	 * 받은 친구 요청 읽기
+	 * @author Minjae Seon
+	 * @param ID 유저 ID
+	 * @return 요청 보낸 User 목록
+	 */
+	public static ArrayList<User> getFriendRequest(String ID) {
+		Connection dbConnection = null;
+		ArrayList<User> users = new ArrayList<>();
+		try {
+			// DB 연결 수립
+			dbConnection = DBManager.getDBConnection();
+
+			PreparedStatement preparedStatement = dbConnection.prepareStatement("select user2_id from friend where user1_id = ? and type = 2");
+			preparedStatement.setString(1, ID);
+
+			ResultSet resultSet = preparedStatement.executeQuery();
+			while(resultSet.next()) {
+				users.add(AccessAccountWithFriendId(resultSet.getString(1)));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return users;
+	}
+
 }
