@@ -158,6 +158,7 @@ public class DBConnect {
 			attrList.add("user_nick");
 			attrList.add("user_birthday");
 			attrList.add("user_statusmsg");
+			attrList.add("user_lasttime");
 			// Condition HashMap
 			HashMap<String, Object> conditionList = new HashMap<String, Object>();
 			conditionList.put("user_id", user_id);
@@ -166,7 +167,7 @@ public class DBConnect {
 			rs = DBManager.selectQuery(dbConnection, "account", attrList, conditionList);
 			if (rs != null) {
 				if (rs.next()) {
-					user = new User(token, user_id, rs.getString(2), rs.getString(4), rs.getString(1), rs.getDate(3), null);
+					user = new User(token, user_id, rs.getString(2), rs.getString(4), rs.getString(1), rs.getDate(3), rs.getTimestamp(5),null);
 				}
 			}
 		} catch (Exception e) {

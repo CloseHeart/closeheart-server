@@ -265,8 +265,18 @@ public class FriendServer extends Thread {
                                 out.println(Util.createSingleKeyValueJSON(500, "msg", "setMsg"));
                             }
                         }
-
-
+                       /* 친구 삭제 처리 */
+                        else if(requestCode == 308){
+                            String friend_id = jsonObject.get("friendid").getAsString();
+                            if(DBConnect.removeFriendRelationship(user.getUserID(), friend_id)){
+                                out.println(Util.createSingleKeyValueJSON(200, "msg", "friendremove"));
+                                refreshHandler(out, user.getUserID());
+                                if(userInfo.containsKey(friend_id)) refreshHandler(userInfo.get(friend_id), friend_id);
+                            }
+                            else{
+                                out.println(Util.createSingleKeyValueJSON(500, "msg", "friendremove"));
+                            }
+                        }
                         else if(requestCode == 309) {
 
                         }
@@ -338,6 +348,7 @@ public class FriendServer extends Thread {
             userInfoMap.put("userMsg", user.getUserMsg());
             userInfoMap.put("userEmail", user.getUserEmail());
             userInfoMap.put("userBirthday", user.getUserBirthday());
+            userInfoMap.put("userLasttime", user.getUserLasttime());
             userInfoMap.put("friend", friendArray.toString());
             out.println(Util.createJSON(200, userInfoMap));
 

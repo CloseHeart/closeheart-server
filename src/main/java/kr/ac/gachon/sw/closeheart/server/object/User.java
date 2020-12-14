@@ -12,11 +12,12 @@ public class User {
 	private String userEmail;
 	private Date userBirthday;
 	private Timestamp userLastTime;
+	private Timestamp userLasttime;
 	private ArrayList<User> friends;
 	private boolean isOnline;
 
 	// 토큰 포함 본인 유저 정보
-	public User(String userToken, String userID, String userNick, String userMsg, String userEmail, Date userBirthday, ArrayList<User> friends) {
+	public User(String userToken, String userID, String userNick, String userMsg, String userEmail, Date userBirthday, Timestamp userLasttime, ArrayList<User> friends) {
 		this.userToken = userToken;
 		this.userID = userID;
 		this.userNick = userNick;
@@ -24,10 +25,11 @@ public class User {
 		this.userEmail = userEmail;
 		this.userBirthday = userBirthday;
 		this.friends = friends;
+		this.userLasttime = userLasttime;
 	}
 
 	// 친구에 담을 유저 정보
-	public User(String userID, String userNick, String userMsg, String userEmail, Date userBirthday, Timestamp userLastTime, boolean isOnline) {
+	public User(String userID, String userNick, String userMsg, String userEmail, Date userBirthday, Timestamp userLasttime, boolean isOnline) {
 		this.userID = userID;
 		this.userNick = userNick;
 		this.userMsg = userMsg;
@@ -35,6 +37,9 @@ public class User {
 		this.userBirthday = userBirthday;
 		this.userLastTime = userLastTime;
 		this.isOnline = isOnline;
+		this.userEmail = userEmail;
+		this.userBirthday = userBirthday;
+		this.userLasttime = userLasttime;
 	}
 
 	public String getUserToken() {
@@ -61,9 +66,7 @@ public class User {
 		return userBirthday;
 	}
 
-	public Timestamp getUserLastTime() {
-		return userLastTime;
-	}
+	public Timestamp getUserLasttime(){ return userLasttime;}
 
 	public ArrayList<User> getFriends() { return friends; }
 
