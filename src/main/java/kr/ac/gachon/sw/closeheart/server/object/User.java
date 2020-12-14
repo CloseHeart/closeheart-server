@@ -11,6 +11,7 @@ public class User {
 	private String userMsg;
 	private String userEmail;
 	private Date userBirthday;
+	private Timestamp userLastTime;
 	private Timestamp userLasttime;
 	private ArrayList<User> friends;
 	private boolean isOnline;
@@ -32,6 +33,9 @@ public class User {
 		this.userID = userID;
 		this.userNick = userNick;
 		this.userMsg = userMsg;
+		this.userEmail = userEmail;
+		this.userBirthday = userBirthday;
+		this.userLastTime = userLastTime;
 		this.isOnline = isOnline;
 		this.userEmail = userEmail;
 		this.userBirthday = userBirthday;

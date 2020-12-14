@@ -13,6 +13,7 @@ import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.time.LocalTime;
@@ -74,8 +75,21 @@ public class FriendServer extends Thread {
                     if(clientRequest.isEmpty()) clientRequest = in.nextLine();
 
                     System.out.println(clientRequest);
+
                     JsonObject jsonObject = JsonParser.parseString(clientRequest).getAsJsonObject();
                     int requestCode = jsonObject.get("code").getAsInt();
+
+
+                    // 토큰 유효성 체크해서 유효하지 않으면 명령 처리 단계 진입 불가
+                    boolean isValidToken = DBConnect.isValidToken(jsonObject.get("token").getAsString(), socket.getInetAddress().getHostAddress());
+                    if(!isValidToken) {
+                        out.println(Util.createSingleKeyValueJSON(403, "msg", "Token Not Valid!"));
+                        in.close();
+                        userInfo.remove(user.getUserID());
+                        out.close();
+                        socket.close();
+                        break;
+                    }
 
                     // User가 null인 경우에는 User 정보를 먼저 받아와야 함
                     // Token을 이용해 user_id를 불러오고, 이를 이용해서 friend 테이블의 정보를 받아와야 함
@@ -99,16 +113,6 @@ public class FriendServer extends Thread {
                     }
                     // User 정보가 있을 경우 처리
                     else {
-                        // 토큰 유효성 체크해서 유효하지 않으면 명령 처리 단계 진입 불가
-                        boolean isValidToken = DBConnect.isValidToken(user.getUserToken(), socket.getInetAddress().getHostAddress());
-                        if(!isValidToken) {
-                            out.println(Util.createSingleKeyValueJSON(403, "msg", "Token Not Valid!"));
-                            in.close();
-                            out.close();
-                            socket.close();
-                            break;
-                        }
-
                         /* 친구 요청 */
                         if(requestCode == 302) {
                             // 요청 ID 가져옴
@@ -261,7 +265,7 @@ public class FriendServer extends Thread {
                                 out.println(Util.createSingleKeyValueJSON(500, "msg", "setMsg"));
                             }
                         }
-                        /* 친구 삭제 처리 */
+                       /* 친구 삭제 처리 */
                         else if(requestCode == 308){
                             String friend_id = jsonObject.get("friendid").getAsString();
                             if(DBConnect.removeFriendRelationship(user.getUserID(), friend_id)){
@@ -272,6 +276,9 @@ public class FriendServer extends Thread {
                             else{
                                 out.println(Util.createSingleKeyValueJSON(500, "msg", "friendremove"));
                             }
+                        }
+                        else if(requestCode == 309) {
+
                         }
                     }
                     /* 로그아웃 처리 */
@@ -315,6 +322,7 @@ public class FriendServer extends Thread {
                 return false;
             }
 
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
             JsonArray friendArray = new JsonArray();
             // friend 테이블의 행 가져옴
             ArrayList<User> friendUsers = DBConnect.AccessFriendTable(user.getUserID(),0);
@@ -323,7 +331,13 @@ public class FriendServer extends Thread {
                 if(userInfo.containsKey(friendUser.getUserID())) {
                     friendUser.setOnline(true);
                 }
-                friendArray.add(new Gson().toJson(friendUser, User.class));
+                jsonObject.addProperty("userID", friendUser.getUserID());
+                jsonObject.addProperty("userNick", friendUser.getUserNick());
+                jsonObject.addProperty("userMsg", friendUser.getUserMsg());
+                jsonObject.addProperty("userEmail", friendUser.getUserEmail());
+                jsonObject.addProperty("userBirthday", simpleDateFormat.format(friendUser.getUserBirthday()));
+                jsonObject.addProperty("userLastTime", friendUser.getUserLastTime().getTime());
+                jsonObject.addProperty("isOnline", friendUser.getOnline());
             }
 
             // 서버로 유저 정보 전송
@@ -379,11 +393,20 @@ public class FriendServer extends Thread {
                 JsonArray friendArray = new JsonArray();
                 // friend 테이블의 행 가져옴
                 ArrayList<User> friendUsers = DBConnect.AccessFriendTable(userID, 0);
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
                 for (User friendUser : friendUsers) {
+                    JsonObject jsonObject = new JsonObject();
                     if(userInfo.containsKey(friendUser.getUserID())) {
                         friendUser.setOnline(true);
                     }
-                    friendArray.add(new Gson().toJson(friendUser, User.class));
+                    jsonObject.addProperty("userID", friendUser.getUserID());
+                    jsonObject.addProperty("userNick", friendUser.getUserNick());
+                    jsonObject.addProperty("userMsg", friendUser.getUserMsg());
+                    jsonObject.addProperty("userEmail", friendUser.getUserEmail());
+                    jsonObject.addProperty("userBirthday", simpleDateFormat.format(friendUser.getUserBirthday()));
+                    jsonObject.addProperty("userLastTime", friendUser.getUserLastTime().getTime());
+                    jsonObject.addProperty("isOnline", friendUser.getOnline());
+                    friendArray.add(jsonObject);
                 }
                 System.out.println(friendArray);
 
