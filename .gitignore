@@ -4,3 +4,4 @@ src/kr/ac/gachon/sw/closeheart/server/db/DBInfo.java
 lib/closeheart-db.jar
 lib/closeheart-mail.jar
 target
+classes
