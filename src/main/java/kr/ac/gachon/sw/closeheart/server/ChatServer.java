@@ -1,8 +1,11 @@
-  
+
 package kr.ac.gachon.sw.closeheart.server;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import javafx.util.Pair;
+import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
+import kr.ac.gachon.sw.closeheart.server.object.User;
 import kr.ac.gachon.sw.closeheart.server.util.Util;
 
 import java.io.*;
@@ -14,70 +17,45 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ChatServer extends Thread {
-	private int port;
-	private static Set<PrintWriter> writers = new HashSet<>();	// 모든 writer
+    private int port;
+    private static Set<PrintWriter> writers = new HashSet<>();    // 모든 writer
 
-	private static HashMap<String, PrintWriter> mapOut = new HashMap<>();	// userToken + outStream
-	private static HashMap<String, String> mapNic = new HashMap<>();	// userToekn + userNicName
+    private static HashMap<String, ArrayList<Pair<String, PrintWriter>>> roomInfo = new HashMap<>(); // Room Info + User ID List
 
-	public ChatServer(int port) {
-		this.port = port;
-	}
+    public ChatServer(int port) {
+        this.port = port;
+    }
 
-	@Override
-	public void run() {
-			/*
-			System.out.println("The chat server is running...");
-		Scanner keyborad = new Scanner(System.in);
-		ServerSocket servercocket = null;
-		Socket socekt = null;
-		String fileName = "input.txt";
+    @Override
+    public void run() {
+        // Chat Server Thread 시작
+        ExecutorService pool = Executors.newFixedThreadPool(1000);
+        try (ServerSocket listener = new ServerSocket(port)) {
+            System.out.println("Chat Server Starting....");
+            while (true) {
+                pool.execute(new ChatHandler(listener.accept()));
+            }
+        } catch (Exception e) {
+            System.out.println("Chat Server Start Failed! - " + e.getMessage());
+        }
+    }
 
-		try{
-			servercocket = new ServerSocket(7777);
-			System.out.println("Waiting for client..");
+    private static class ChatHandler implements Runnable {
+        private Socket socket;
 
-			socekt = servercocket.accept();
-			System.out.println("Connected with client.");
-			FileSender fs = new FileSender(socekt, fileName);
-			fs.start();
+        private Scanner in;
+        private PrintWriter out;
+        private User myUser;
 
-		}
-		catch (Exception e){
-			e.printStackTrace();
-		}
-		finally {
-			System.out.println("End of ChatServer");
-		}
-		 */
+        public ChatHandler(Socket socket) {
+            this.socket = socket;
+        }
 
-		// Chat Server Thread 시작
-		ExecutorService pool = Executors.newFixedThreadPool(1000);
-		try (ServerSocket listener = new ServerSocket(port)) {
-			System.out.println("Chat Server Starting....");
-			while (true) {
-				pool.execute(new ChatHandler(listener.accept()));
-			}
-		} catch (Exception e) {
-			System.out.println("Chat Server Start Failed! - " + e.getMessage());
-		}
-	}
-
-	private static class ChatHandler implements Runnable {
-		private Socket socket;
-		private String nickName;
-
-		private Scanner in;
-		private PrintWriter out;
-
-		public ChatHandler(Socket socket) {
-			this.socket = socket;
-		}
-
-		public void run() {
-			try {
-				in = new Scanner(socket.getInputStream());
-				out = new PrintWriter(socket.getOutputStream(), true);
+        public void run() {
+            String currentRoomNumber = null;
+            try {
+                in = new Scanner(socket.getInputStream());
+                out = new PrintWriter(socket.getOutputStream(), true);
 
 				/*
 					Chatting Protocol
@@ -92,8 +70,6 @@ public class ChatServer extends Thread {
 					requestCode 212 - 채팅방 나가기
 					 - 함께 첨부 될 내용 - 토큰
 					 Example JSON - {requestCode:212, token:"토큰"}
-					requestCode 213 - 파일 전송 요청
-					 - 함께 첨부 될 내용 - 토큰, 
 
 					-- Server To Client --
 					클라이언트의 입장 요청을 받고 처리하는 방법 (requestCode 210)
@@ -111,111 +87,122 @@ public class ChatServer extends Thread {
 					 토큰 관련 처리는 나중에 다른 Class와 함께 추가 예정 - 일단은 채팅 주고받을 수 있도록 구현이 우선!
 				 */
 
-				// 유저 인풋 처리
-				while(in.hasNextLine()) {
-					String userInput = in.nextLine();
-					if(userInput.isEmpty()) userInput = in.nextLine();
+                // 유저 인풋 처리
+                while (in.hasNextLine()) {
+                    String userInput = in.nextLine();
+                    if (userInput.isEmpty()) userInput = in.nextLine();
 
-					// 유저에게서 받은 JSON
-					JsonObject userJson = JsonParser.parseString(userInput).getAsJsonObject();
+                    // 유저에게서 받은 JSON
+                    JsonObject userJson = JsonParser.parseString(userInput).getAsJsonObject();
 
-					/*Chatting*/
-					// JSON이 Null이 아니고
-					if(!userJson.isJsonNull()){
-						int requestCode = userJson.get("code").getAsInt();
-						/* 채팅방 입장 */
-						if(requestCode == 210){
-							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Enter Chat Room Request"));
-							// 함께 담긴 nicName과 token 얻음
-							String userNic = userJson.get("nickName").getAsString();
-							String userToken = userJson.get("token").getAsString();
+                    // 토큰 유효성 체크해서 유효하지 않으면 명령 처리 단계 진입 불가
+                    boolean isValidToken = DBConnect.isValidToken(userJson.get("token").getAsString(), socket.getInetAddress().getHostAddress());
+                    if (!isValidToken) {
+                        out.println(Util.createSingleKeyValueJSON(403, "msg", "Token Not Valid!"));
+                        break;
+                    }
 
-							JsonObject toUser = new JsonObject();
-							toUser.addProperty("type","join");
-							toUser.addProperty("user",userNic);
+                    /*Chatting*/
+                    // JSON이 Null이 아니고
+                    if (!userJson.isJsonNull()) {
+                        int requestCode = userJson.get("code").getAsInt();
+                        /* 채팅방 입장 */
+                        if (requestCode == 210) {
+                            System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Enter Chat Room Request"));
 
-							// 모든 친구들에게 JSONobj 전송
-							for (PrintWriter writer : writers) {
-								writer.println(toUser);
-							}
+                            // 유저 정보
+                            myUser = DBConnect.AccessSessionWithToken(userJson.get("token").getAsString());
+                            currentRoomNumber = userJson.get("roomNumber").getAsString();
 
-							// hashset에 out추가
-							writers.add(out);
-							mapOut.put(userToken, out);	// hashmap에 Usertoken, out추가
-							mapNic.put(userToken, userNic); // hashap에 UserToken, UserNic 추가
+                            // 방 없으면 생성
+                            if (!roomInfo.containsKey(currentRoomNumber)) {
+                                ArrayList<Pair<String, PrintWriter>> userList = new ArrayList<>();
+                                userList.add(new Pair<>(myUser.getUserID(), out));
+                                roomInfo.put(currentRoomNumber, userList);
+                            } else {
+                                // 있으면 그냥 방에다 배정
+                                roomInfo.get(currentRoomNumber).add(new Pair<>(myUser.getUserID(), out));
+                            }
 
-							if(!writers.contains(out) && mapNic.get(userToken) == null){
-								System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Enter Chat Room Failed!"));
-							}
-							if(mapOut.get(userToken) == null) {}
-							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Enter Chat Room Success!"));
+                            // 입장 메시지 전송
+                            HashMap<String, Object> joinMap = new HashMap<>();
+                            joinMap.put("type", "join");
+                            joinMap.put("user", myUser.getUserNick());
 
-						}
-						/* 채팅 메세지 전송 */
-						else if(requestCode == 211){
-							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Msg Send Request"));
-							// 함께 담긴 메세지와 token 얻음
-							String userMsg = userJson.get("msg").getAsString();
-							String userToken = userJson.get("token").getAsString();
 
-							JsonObject toUser = new JsonObject();
-							toUser.addProperty("type","message");
-							toUser.addProperty("user",mapNic.get(userToken));
-							toUser.addProperty("msg",userMsg);
+                            ArrayList<Pair<String, PrintWriter>> currentUserList = roomInfo.get(currentRoomNumber);
+                            for (Pair<String, PrintWriter> pair : currentUserList) {
+                                if (!pair.getKey().equals(myUser.getUserID())) {
+                                    pair.getValue().println(Util.createJSON(200, joinMap));
+                                }
+                            }
+                            continue;
+                        }
+                        /* 채팅 메세지 전송 */
+                        if (requestCode == 211) {
+                            System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Msg Send Request"));
+                            String userMsg = userJson.get("msg").getAsString();
 
-							// 1:1 채팅 기능
-							// 모든 친구들에게 JSONobj 전송
-							for (PrintWriter writer : writers) {
-								writer.println(toUser);
-							}
-							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Msg Send Success!"));
-						}
-						/* 채팅방 나가기 */
-						else if(requestCode == 212){
-							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Exit Chat Room Request"));
-							// 함께 담긴 token 얻음
-							String userToken = userJson.get("token").getAsString();
+                            // 메시지 보내기
+                            HashMap<String, Object> msgMap = new HashMap<>();
+                            msgMap.put("type", "message");
+                            msgMap.put("user", myUser.getUserNick());
+                            msgMap.put("msg", userMsg);
 
-							JsonObject toUser = new JsonObject();
-							toUser.addProperty("type","exit");
-							toUser.addProperty("user",mapNic.get(userToken));
+                            // 현재 방 번호 사람들에게 모두 전송
+                            ArrayList<Pair<String, PrintWriter>> currentUserList = roomInfo.get(currentRoomNumber);
+                            for (Pair<String, PrintWriter> pair : currentUserList) {
+                                pair.getValue().println(Util.createJSON(200, msgMap));
+                            }
+                            System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Msg Send Success!"));
+                        }
+                        /* 채팅방 나가기 */
+                        else if (requestCode == 212) {
+                            System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Exit Chat Room Request"));
 
-							writers.remove(out);	// HashSet에서 outStream 제거
-							mapNic.remove(userToken);	// HashMap에서 해당 유저 제거
-							mapOut.remove(userToken);
+                            // 퇴장 알림
+                            HashMap<String, Object> exitMap = new HashMap<>();
+                            exitMap.put("type", "exit");
+                            exitMap.put("user", myUser.getUserNick());
 
-							if(writers.contains(out) && mapNic.get(userToken) != null){
-								System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Exit Chat Room Failed!"));
-							}
-							if(mapOut.get(userToken) != null) {}
+                            // 현재 방 번호 사람들에게 모두 전송
+                            ArrayList<Pair<String, PrintWriter>> currentUserList = roomInfo.get(currentRoomNumber);
+                            for (Pair<String, PrintWriter> pair : currentUserList) {
+                                if (!pair.getKey().equals(myUser.getUserID())) {
+                                    pair.getValue().println(Util.createJSON(200, exitMap));
+                                }
+                            }
+                            break;
+                        }
+                        /* 알 수 없는 Request Code 처리 */
+                        else {
+                            System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Not Valid Request!"));
+                            out.println(Util.createSingleKeyValueJSON(400, "msg", "Not Valid Request!") + "\n");
+                        }
+                    } else {
+                        // 이미 제거되었다면 break
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
-							// 모든 친구들에게 JSONobj 전송
-							for (PrintWriter writer : writers) {
-								writer.println(toUser);
-							}
-							try{
-								socket.close();
-							}
-							catch(Exception e){
-							}
-							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Exit Chat Room Success!"));
-						}
-						/* 알 수 없는 Request Code 처리 */
-						else{	//
-							System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Not Valid Request!"));
-							out.println(Util.createSingleKeyValueJSON(400, "msg", "Not Valid Request!") + "\n");
-						}
-					}
-					// Json이 비어있는 Request라면 유효하지 않다고 보냄
-					else{
-						System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Not Valid Request!"));
-						out.println(Util.createSingleKeyValueJSON(400, "msg", "Not Valid Request!") + "\n");
-					}
-				}
-			} catch (Exception e) {
-				if(out != null) out.println(Util.createSingleKeyValueJSON(500, "msg", "Server Error"));
-				System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Server Error - " + e.getMessage()));
-			}
-		}
-	}
+
+            if (currentRoomNumber != null) {
+                ArrayList<Pair<String, PrintWriter>> currentUserList = roomInfo.get(currentRoomNumber);
+                currentUserList.removeIf(pair -> pair.getKey().equals(myUser.getUserID()));
+                roomInfo.put(currentRoomNumber, currentUserList);
+            }
+
+            try {
+                in.close();
+                out.close();
+                socket.close();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }
