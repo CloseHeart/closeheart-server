@@ -1041,4 +1041,36 @@ public class DBConnect {
 		return false;
 	}
 
+	/*
+	 * 계정 삭제
+	 * @author Minjae Seon
+	 * @param ID 유저 ID
+	 * @return 성공 여부
+	 */
+	public static boolean removeID(String ID) {
+		Connection dbConnection = null;
+		try {
+			// DB 연결 수립
+			dbConnection = DBManager.getDBConnection();
+
+			PreparedStatement preparedStatement = dbConnection.prepareStatement("delete from account where user_id = ?");
+			preparedStatement.setString(1, ID);
+
+			int result = preparedStatement.executeUpdate();
+			return result >= 1;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return false;
+	}
+
 }

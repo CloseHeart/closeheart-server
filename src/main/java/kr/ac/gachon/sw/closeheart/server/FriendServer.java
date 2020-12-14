@@ -6,13 +6,9 @@ import kr.ac.gachon.sw.closeheart.server.object.User;
 import kr.ac.gachon.sw.closeheart.server.util.Util;
 import kr.ac.gachon.sw.closeheart.server.api.Covid19API;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.json.JSONObject;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.sql.Array;
-import java.sql.ResultSet;
-import java.sql.SQLIntegrityConstraintViolationException;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -139,8 +135,7 @@ public class FriendServer extends Thread {
                                             }
                                         }
                                         else out.println(Util.createSingleKeyValueJSON(500, "msg", "friendrequest"));
-                                    } catch (SQLIntegrityConstraintViolationException intgE) {
-                                        // 제약 조건 에러 발생이면 이미 친구이거나 전송된 요청이므로 401
+                                    } catch (Exception e) {
                                         out.println(Util.createSingleKeyValueJSON(401, "msg", "friendrequest"));
                                     }
                                 }
@@ -323,6 +318,61 @@ public class FriendServer extends Thread {
                                 }
                             }
                         }
+                        /* 유저 정보 요청 */
+                        else if(requestCode == 311) {
+                            String requestID = jsonObject.get("requestID").getAsString();
+                            User requestUser = DBConnect.AccessAccountWithFriendId(requestID);
+
+                            if(requestUser != null) {
+                                SimpleDateFormat bdayFormat = new SimpleDateFormat("yyyy-MM-dd");
+                                JsonObject requestUserObject = new JsonObject();
+                                requestUserObject.addProperty("userID", requestUser.getUserID());
+                                requestUserObject.addProperty("userNick", requestUser.getUserNick());
+                                requestUserObject.addProperty("userMsg", requestUser.getUserMsg());
+                                requestUserObject.addProperty("userEmail", requestUser.getUserEmail());
+                                requestUserObject.addProperty("userBirthday", bdayFormat.format(requestUser.getUserBirthday()));
+                                requestUserObject.addProperty("userLastTime", requestUser.getUserLastTime().getTime());
+
+                                HashMap<String, Object> infoRequestMap = new HashMap<>();
+                                infoRequestMap.put("msg", "userinforesponse");
+                                infoRequestMap.put("friendinfo", requestUserObject.toString());
+                                out.println(Util.createJSON(200, infoRequestMap));
+                            }
+                            else {
+                                out.println(Util.createSingleKeyValueJSON(400, "msg", "userinforesponse"));
+                            }
+                        }
+                        /* 회원 탈퇴 요청 */
+                        else if(requestCode == 312) {
+                            String pw = jsonObject.get("password").getAsString();
+
+                            // 비번 맞으면
+                            if(DBConnect.loginMatchUser(user.getUserID(), pw)) {
+                                // 먼저 친구 목록 가져옴 (데이터 다 날아가니까)
+                                ArrayList<String> friendList = DBConnect.getFriendIDList(user.getUserID());
+
+                                // 삭제 성공하면
+                                if (DBConnect.removeID(user.getUserID())) {
+                                    // 현재 접속중 유저 목록 가져와서
+                                    for (String uid : userInfo.keySet()) {
+                                        // 친구 목록에 일치하는 사람이 있다면
+                                        if (friendList.contains(uid)) {
+                                            // 새로고침 하라고 알리기
+                                            refreshHandler(userInfo.get(uid), uid);
+                                        }
+                                    }
+
+                                    // 삭제 성공 알림
+                                    out.println(Util.createSingleKeyValueJSON(200, "msg", "removeid"));
+                                    break;
+                                } else {
+                                    out.println(Util.createSingleKeyValueJSON(403, "msg", "removeid"));
+                                }
+                            }
+                            else {
+                                out.println(Util.createSingleKeyValueJSON(400, "msg", "removeid"));
+                            }
+                        }
                     }
                     /* 로그아웃 처리 */
                     if(requestCode == 301) {
@@ -342,6 +392,13 @@ public class FriendServer extends Thread {
             }
 
             if(user != null) userInfo.remove(user.getUserID());
+            try {
+                in.close();
+                out.close();
+                socket.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         /*
