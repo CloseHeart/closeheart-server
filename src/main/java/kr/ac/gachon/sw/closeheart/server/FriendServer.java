@@ -74,8 +74,21 @@ public class FriendServer extends Thread {
                     if(clientRequest.isEmpty()) clientRequest = in.nextLine();
 
                     System.out.println(clientRequest);
+
                     JsonObject jsonObject = JsonParser.parseString(clientRequest).getAsJsonObject();
                     int requestCode = jsonObject.get("code").getAsInt();
+
+
+                    // 토큰 유효성 체크해서 유효하지 않으면 명령 처리 단계 진입 불가
+                    boolean isValidToken = DBConnect.isValidToken(jsonObject.get("token").getAsString(), socket.getInetAddress().getHostAddress());
+                    if(!isValidToken) {
+                        out.println(Util.createSingleKeyValueJSON(403, "msg", "Token Not Valid!"));
+                        in.close();
+                        userInfo.remove(user.getUserID());
+                        out.close();
+                        socket.close();
+                        break;
+                    }
 
                     // User가 null인 경우에는 User 정보를 먼저 받아와야 함
                     // Token을 이용해 user_id를 불러오고, 이를 이용해서 friend 테이블의 정보를 받아와야 함
@@ -99,16 +112,6 @@ public class FriendServer extends Thread {
                     }
                     // User 정보가 있을 경우 처리
                     else {
-                        // 토큰 유효성 체크해서 유효하지 않으면 명령 처리 단계 진입 불가
-                        boolean isValidToken = DBConnect.isValidToken(user.getUserToken(), socket.getInetAddress().getHostAddress());
-                        if(!isValidToken) {
-                            out.println(Util.createSingleKeyValueJSON(403, "msg", "Token Not Valid!"));
-                            in.close();
-                            out.close();
-                            socket.close();
-                            break;
-                        }
-
                         /* 친구 요청 */
                         if(requestCode == 302) {
                             // 요청 ID 가져옴
@@ -260,6 +263,11 @@ public class FriendServer extends Thread {
                             else{
                                 out.println(Util.createSingleKeyValueJSON(500, "msg", "setMsg"));
                             }
+                        }
+
+
+                        else if(requestCode == 309) {
+
                         }
                     }
                     /* 로그아웃 처리 */
