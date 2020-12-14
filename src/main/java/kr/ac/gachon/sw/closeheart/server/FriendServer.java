@@ -5,6 +5,7 @@ import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
 import kr.ac.gachon.sw.closeheart.server.object.User;
 import kr.ac.gachon.sw.closeheart.server.util.Util;
 import kr.ac.gachon.sw.closeheart.server.api.Covid19API;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.json.JSONObject;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
@@ -271,14 +272,56 @@ public class FriendServer extends Thread {
                             if(DBConnect.removeFriendRelationship(user.getUserID(), friend_id)){
                                 out.println(Util.createSingleKeyValueJSON(200, "msg", "friendremove"));
                                 refreshHandler(out, user.getUserID());
+                                sendRefreshAllFriends();
                                 if(userInfo.containsKey(friend_id)) refreshHandler(userInfo.get(friend_id), friend_id);
                             }
                             else{
                                 out.println(Util.createSingleKeyValueJSON(500, "msg", "friendremove"));
                             }
                         }
+                        /* 채팅 요청 */
                         else if(requestCode == 309) {
+                            String inviteID = jsonObject.get("inviteID").getAsString();
+                            if(userInfo.containsKey(inviteID)) {
+                                HashMap<String, Object> inviteSendMap = new HashMap<>();
+                                inviteSendMap.put("msg", "receivechatinvite");
+                                inviteSendMap.put("inviteUserID", user.getUserID());
+                                inviteSendMap.put("inviteUserNick", user.getUserNick());
+                                userInfo.get(inviteID).println(Util.createJSON(200, inviteSendMap));
+                                out.println(Util.createSingleKeyValueJSON(200, "msg", "sendchatinvite"));
+                            }
+                            else {
+                                out.println(Util.createSingleKeyValueJSON(400, "msg", "sendchatinvite"));
+                            }
+                        }
+                        /* 채팅 초대 수락 / 거부 */
+                        else if(requestCode == 310) {
+                            String inviteAnswer = jsonObject.get("chatinvite").getAsString();
+                            String inviteUserID = jsonObject.get("inviteUserID").getAsString();
+                            if(inviteAnswer.equals("accept")) {
+                                if(userInfo.containsKey(inviteUserID)) {
+                                    String roomNumber = RandomStringUtils.randomAlphanumeric(8);
 
+                                    // 요청 받은 Client 입장용
+                                    HashMap<String, Object> receiverChatEnterMap = new HashMap<>();
+                                    receiverChatEnterMap.put("msg", "enterchat");
+                                    receiverChatEnterMap.put("serverPort", ServerMain.chatServerPort);
+                                    receiverChatEnterMap.put("roomNumber", roomNumber);
+                                    out.println(Util.createJSON(200, receiverChatEnterMap));
+
+                                    // 요청 보낸 Client 입장용
+                                    HashMap<String, Object> senderChatEnterMap = new HashMap<>();
+                                    senderChatEnterMap.put("msg", "chatinviteresult");
+                                    senderChatEnterMap.put("serverPort", ServerMain.chatServerPort);
+                                    senderChatEnterMap.put("roomNumber", roomNumber);
+                                    userInfo.get(inviteUserID).println(Util.createJSON(200, senderChatEnterMap));
+                                }
+                            }
+                            else if(inviteAnswer.equals("decline")) {
+                                if(userInfo.containsKey(inviteUserID)) {
+                                    userInfo.get(inviteUserID).println(Util.createSingleKeyValueJSON(403, "msg", "chatinviteresult"));
+                                }
+                            }
                         }
                     }
                     /* 로그아웃 처리 */
@@ -322,6 +365,7 @@ public class FriendServer extends Thread {
                 return false;
             }
 
+            DBConnect.updateLastTime(user.getUserID());
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
             JsonArray friendArray = new JsonArray();
             // friend 테이블의 행 가져옴
@@ -350,6 +394,8 @@ public class FriendServer extends Thread {
             userInfoMap.put("userBirthday", user.getUserBirthday());
             userInfoMap.put("friend", friendArray.toString());
             out.println(Util.createJSON(200, userInfoMap));
+
+            sendRefreshAllFriends();
 
             return true;
         }

@@ -1011,4 +1011,34 @@ public class DBConnect {
 		return false;
 	}
 
+	public static boolean updateLastTime(String id) {
+		Connection dbConnection = null;
+		try {
+			dbConnection = DBManager.getDBConnection();
+
+			// PreparedStatement 이용 Insert
+			PreparedStatement sessionStatement = dbConnection.prepareStatement("UPDATE account set user_lasttime = ? where user_id = ?");
+			sessionStatement.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+			sessionStatement.setString(2, id);
+
+			// 전송
+			int result = sessionStatement.executeUpdate();
+
+			return result >= 1;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return false;
+	}
+
 }

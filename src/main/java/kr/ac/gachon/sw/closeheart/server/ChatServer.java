@@ -3,10 +3,10 @@ package kr.ac.gachon.sw.closeheart.server;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import javafx.util.Pair;
 import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
 import kr.ac.gachon.sw.closeheart.server.object.User;
 import kr.ac.gachon.sw.closeheart.server.util.Util;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.*;
 import java.net.*;
@@ -115,13 +115,14 @@ public class ChatServer extends Thread {
                             currentRoomNumber = userJson.get("roomNumber").getAsString();
 
                             // 방 없으면 생성
+                            Pair<String, PrintWriter> pair = Pair.of(myUser.getUserID(), out);
                             if (!roomInfo.containsKey(currentRoomNumber)) {
                                 ArrayList<Pair<String, PrintWriter>> userList = new ArrayList<>();
-                                userList.add(new Pair<>(myUser.getUserID(), out));
+                                userList.add(pair);
                                 roomInfo.put(currentRoomNumber, userList);
                             } else {
                                 // 있으면 그냥 방에다 배정
-                                roomInfo.get(currentRoomNumber).add(new Pair<>(myUser.getUserID(), out));
+                                roomInfo.get(currentRoomNumber).add(pair);
                             }
 
                             // 입장 메시지 전송
@@ -131,9 +132,9 @@ public class ChatServer extends Thread {
 
 
                             ArrayList<Pair<String, PrintWriter>> currentUserList = roomInfo.get(currentRoomNumber);
-                            for (Pair<String, PrintWriter> pair : currentUserList) {
-                                if (!pair.getKey().equals(myUser.getUserID())) {
-                                    pair.getValue().println(Util.createJSON(200, joinMap));
+                            for (Pair<String, PrintWriter> rpair : currentUserList) {
+                                if (!rpair.getKey().equals(myUser.getUserID())) {
+                                    rpair.getValue().println(Util.createJSON(200, joinMap));
                                 }
                             }
                             continue;
