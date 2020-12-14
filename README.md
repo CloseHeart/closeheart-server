@@ -59,7 +59,7 @@ Chat Program '마음을 가까이 (CloseHeart)' Server
     02110-1301 USA.
 
 ### eclipse-ee4j/mail (https://github.com/eclipse-ee4j/mail)
-   Copyright (C) 2018 eclipse-ee4j
+    Copyright (C) 2018 eclipse-ee4j
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -76,16 +76,16 @@ Chat Program '마음을 가까이 (CloseHeart)' Server
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335 USA
 
 ### apache/commons-lang (https://github.com/apache/commons-lang)
-   Copyright 2001-2020 The Apache Software Foundation
+       Copyright 2001-2020 The Apache Software Foundation
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+           http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
