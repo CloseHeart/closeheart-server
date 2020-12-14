@@ -227,6 +227,48 @@ public class DBConnect {
 		return users;
 	}
 
+	/*
+	 * 유저 친구 목록 획득
+	 * @author Minjae Seon
+	 * @param  userid 유저 아이디
+	 * @return ArrayList<User>
+	 */
+	public static ArrayList<String> getFriendIDList(String userid) {
+		Connection dbConnection = null;
+		ResultSet rs = null;
+		ArrayList<String> userID = new ArrayList<>();
+		try {
+			dbConnection = DBManager.getDBConnection();
+
+			// 가져올 Attribute List
+			ArrayList<String> attrList = new ArrayList<String>();
+			attrList.add("user2_id");
+
+			// Condition HashMap
+			HashMap<String, Object> conditionList = new HashMap<String, Object>();
+			conditionList.put("type", 0);
+
+			// SQL Select Query 전송
+			rs = DBManager.selectQuery(dbConnection, "friend", attrList, conditionList);
+			while (rs.next()) {
+				// user의 친구 id 값 추출
+				userID.add(rs.getString(1));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return userID;
+	}
+
 	/* 친구 유저 아이디 값을 이용해 계정 테이블에 액세스하는 함수
 	 * @author Taehyun Park
 	 * @param user_id 유저 아이디(친구 아이디값)
@@ -470,7 +512,7 @@ public class DBConnect {
 	}
 
 	/*
-	 * 유저 세션 정보 DB 입력
+	 * 친구 요청 DB 입력
 	 * @author Minjae Seon
 	 * @param token 유저 토큰
 	 * @param requestID 요청 받을 유저 ID

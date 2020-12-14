@@ -88,6 +88,7 @@ public class FriendServer extends Thread {
                             }
                             else {
                                 if(!userInfo.containsValue(out)) userInfo.put(user.getUserID(), out);
+                                sendRefreshAllFriends();
                             }
                         }
                         // 이외 코드는 전부 다 인증 후에만 처리해야함
@@ -190,56 +191,74 @@ public class FriendServer extends Thread {
                         }
                         /* 개인 정보 변경 변경 처리 */
                         else if(requestCode == 306){
-                            String friendRequestID = jsonObject.get("requestID").getAsString();
-                            boolean error = false;
-                            // 닉네임 변경
-                            for(String key : jsonObject.keySet()){
-                                String value = jsonObject.get(key).getAsString();
-                                if(key.equals("requestNick")) {
-                                    if (!DBConnect.nickCheck(value)) {
-                                        if (!DBConnect.resetNickname(friendRequestID, value)) {
+                            // 현재 유저 아이디 및 Socket으로 넘어온 PW
+                            String userID = user.getUserID();
+                            String currentPW = jsonObject.get("currentPW").getAsString();
+
+                            // 입력한 현재 비밀번호 일치하면
+                            if(DBConnect.loginMatchUser(userID, currentPW)) {
+                                boolean error = false;
+
+                                // 반영 정보 보내기 위한 Map
+                                HashMap<String, Object> newInfoMap = new HashMap<>();
+                                newInfoMap.put("msg", "infochange");
+
+                                for (String key : jsonObject.keySet()) {
+                                    String value = jsonObject.get(key).getAsString();
+                                    // 닉네임 변경
+                                    if (key.equals("requestNick")) {
+                                        if (!DBConnect.nickCheck(value)) {
+                                            if (!DBConnect.resetNickname(userID, value)) {
+                                                error = true;
+                                                break;
+                                            }
+                                        } else {
                                             error = true;
                                             break;
                                         }
-                                    }
-                                    else {
-                                        error = true;
-                                        break;
-                                    }
-                                }
-                                else if(key.equals("requestMSG")){
-                                    if(!DBConnect.resetStatusmsg(friendRequestID, value)){
-                                        error = true;
-                                        break;
-                                    }
-                                }
-                                else if(key.equals("requestBirth")){
-                                    if(!DBConnect.resetBirthday(friendRequestID, value)){
-                                        error = true;
-                                        break;
+                                        newInfoMap.put("newNick", value);
+                                    } else if (key.equals("requestPW")) {
+                                        if (!DBConnect.resetPassword(userID, value)) {
+                                            error = true;
+                                            break;
+                                        }
+                                        newInfoMap.put("changePW", true);
+                                    } else if (key.equals("requestBirth")) {
+                                        if (!DBConnect.resetBirthday(userID, value)) {
+                                            error = true;
+                                            break;
+                                        }
+                                        newInfoMap.put("newBday", value);
                                     }
                                 }
-                            }
-                            // for문 끝
-                            if(!error) {
-                                out.println(Util.createSingleKeyValueJSON(200, "msg", "infochange"));
-                                System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Set personal info Success!"));
+                                // for문 끝
+                                if (!error) {
+                                    // 위에서 담은 새 정보들 전부 전송
+                                    out.println(Util.createJSON(200, newInfoMap));
+                                    // 친구들에게 정보 알리기
+                                    sendRefreshAllFriends();
+                                    System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Set personal info Success!"));
+                                }
+                                else {
+                                    out.println(Util.createSingleKeyValueJSON(400, "msg", "infochange"));
+                                    System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Set personal info Error!"));
+                                }
                             }
                             else {
-                                out.println(Util.createSingleKeyValueJSON(400, "msg", "infochange"));
-                                System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Set personal info Error!"));
+                                out.println(Util.createSingleKeyValueJSON(403, "msg", "infochange"));
+                                System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Set personal info - Current Password not equal"));
                             }
                         }
-                        /* 비밀번호 변경 */
+                        /* 상태메시지 변경 */
                         else if(requestCode == 307){
-                            String friendRequestPW = jsonObject.get("requestPW").getAsString();
-                            String friendRequestID = jsonObject.get("requestID").getAsString();
-                            if(DBConnect.resetPassword(friendRequestID, friendRequestPW)){
-                                out.println(Util.createSingleKeyValueJSON(200, "msg", "pwreset"));
-                                System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Reset PW Success!"));
+                            String value = jsonObject.get("newMsg").getAsString();
+                            if(DBConnect.resetStatusmsg(user.getUserID(), value)){
+                                out.println(Util.createSingleKeyValueJSON(200, "msg", "setMsg"));
+                                sendRefreshAllFriends();
+                                System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Set Message Success!"));
                             }
                             else{
-                                out.println(Util.createSingleKeyValueJSON(500, "msg", "pwreset"));
+                                out.println(Util.createSingleKeyValueJSON(500, "msg", "setMsg"));
                             }
                         }
                     }
@@ -249,8 +268,8 @@ public class FriendServer extends Thread {
                         boolean result = DBConnect.removeToken(userToken, socket.getInetAddress().getHostAddress());
                         out.println(Util.createSingleKeyValueJSON(301, "msg", "logout"));
                         userInfo.remove(user.getUserID());
+                        if(user != null) sendRefreshAllFriends();
                         System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Logout - Token Delete : " + result));
-
                     }
                 }
             }
@@ -353,6 +372,7 @@ public class FriendServer extends Thread {
                     }
                     friendArray.add(new Gson().toJson(friendUser, User.class));
                 }
+                System.out.println(friendArray);
 
                 // 서버로 유저 정보 전송
                 userInfoMap.put("msg", "friendrefresh");
@@ -383,6 +403,24 @@ public class FriendServer extends Thread {
             }
             else {
                 DBConnect.removeFriendRelationship(userID, targetID);
+            }
+        }
+
+        /*
+         * 모든 친구에게 새로고침 명령 보내기
+         * @author Minjae Seon
+         */
+        private void sendRefreshAllFriends() {
+            // 친구 목록 불러오기
+            ArrayList<String> friendList = DBConnect.getFriendIDList(user.getUserID());
+
+            // 현재 접속중 유저 목록 가져와서
+            for(String uid : userInfo.keySet()) {
+                // 친구 목록에 일치하는 사람이 있다면
+                if(friendList.contains(uid)) {
+                    // 새로고침 하라고 알리기
+                    refreshHandler(userInfo.get(uid), uid);
+                }
             }
         }
     }
