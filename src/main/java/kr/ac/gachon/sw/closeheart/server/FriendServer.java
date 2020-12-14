@@ -12,6 +12,7 @@ import java.net.Socket;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.time.LocalTime;
@@ -73,8 +74,21 @@ public class FriendServer extends Thread {
                     if(clientRequest.isEmpty()) clientRequest = in.nextLine();
 
                     System.out.println(clientRequest);
+
                     JsonObject jsonObject = JsonParser.parseString(clientRequest).getAsJsonObject();
                     int requestCode = jsonObject.get("code").getAsInt();
+
+
+                    // 토큰 유효성 체크해서 유효하지 않으면 명령 처리 단계 진입 불가
+                    boolean isValidToken = DBConnect.isValidToken(jsonObject.get("token").getAsString(), socket.getInetAddress().getHostAddress());
+                    if(!isValidToken) {
+                        out.println(Util.createSingleKeyValueJSON(403, "msg", "Token Not Valid!"));
+                        in.close();
+                        userInfo.remove(user.getUserID());
+                        out.close();
+                        socket.close();
+                        break;
+                    }
 
                     // User가 null인 경우에는 User 정보를 먼저 받아와야 함
                     // Token을 이용해 user_id를 불러오고, 이를 이용해서 friend 테이블의 정보를 받아와야 함
@@ -98,16 +112,6 @@ public class FriendServer extends Thread {
                     }
                     // User 정보가 있을 경우 처리
                     else {
-                        // 토큰 유효성 체크해서 유효하지 않으면 명령 처리 단계 진입 불가
-                        boolean isValidToken = DBConnect.isValidToken(user.getUserToken(), socket.getInetAddress().getHostAddress());
-                        if(!isValidToken) {
-                            out.println(Util.createSingleKeyValueJSON(403, "msg", "Token Not Valid!"));
-                            in.close();
-                            out.close();
-                            socket.close();
-                            break;
-                        }
-
                         /* 친구 요청 */
                         if(requestCode == 302) {
                             // 요청 ID 가져옴
@@ -152,11 +156,14 @@ public class FriendServer extends Thread {
                             try {
                                 LocalDate currentDate = LocalDate.now();
                                 LocalTime currentTime = LocalTime.now();
-                                if(currentTime.getHour() < 11) currentDate =  currentDate.minusDays(1); // 코로나 업데이트 시간 전
+                                LocalTime standardTime = LocalTime.parse("10:10:00");
+
+                                if(currentTime.compareTo(standardTime) < 0) currentDate =  currentDate.minusDays(1); // 코로나 업데이트 시간 전
                                 int newCnt, currDecideCnd;
                               
                                 if (Covid19API.isCovid19Data(currentDate)) {
                                     int agoCnt = DBConnect.getCovid19Info(currentDate.minusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE));   // 어제 확진자 수
+
                                     currDecideCnd = DBConnect.getCovid19Info(currentDate.format(DateTimeFormatter.BASIC_ISO_DATE));   // 오늘 확진자 수
                                     newCnt = currDecideCnd - agoCnt;  // 신규 확진자 수
                                 } else {
@@ -167,8 +174,8 @@ public class FriendServer extends Thread {
                                     
                                 HashMap<String, Object> covidInfo = new HashMap<>();
                                 covidInfo.put("msg", "covid19");
-                                covidInfo.put("newCnt", String.valueOf(newCnt));
-                                covidInfo.put("currDecideCnd", String.valueOf(currDecideCnd));
+                                covidInfo.put("newCnt", String.valueOf(NumberFormat.getInstance().format(newCnt)));
+                                covidInfo.put("currDecideCnd", String.valueOf(NumberFormat.getInstance().format(currDecideCnd)));
                                 out.println(Util.createJSON(200, covidInfo));
                                 System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Covid-19 Data Send Success!"));
                             } catch (Exception e) {
@@ -256,6 +263,11 @@ public class FriendServer extends Thread {
                             else{
                                 out.println(Util.createSingleKeyValueJSON(500, "msg", "setMsg"));
                             }
+                        }
+
+
+                        else if(requestCode == 309) {
+
                         }
                     }
                     /* 로그아웃 처리 */
