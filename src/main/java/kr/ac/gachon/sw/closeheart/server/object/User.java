@@ -12,6 +12,7 @@ public class User {
 	private String userEmail;
 	private Date userBirthday;
 	private Timestamp userLastTime;
+	private Timestamp userLasttime;
 	private ArrayList<User> friends;
 	private boolean isOnline;
 
@@ -27,7 +28,7 @@ public class User {
 	}
 
 	// 친구에 담을 유저 정보
-	public User(String userID, String userNick, String userMsg, String userEmail, Date userBirthday, Timestamp userLastTime, boolean isOnline) {
+	public User(String userID, String userNick, String userMsg, String userEmail, Date userBirthday, Timestamp userLasttime, boolean isOnline) {
 		this.userID = userID;
 		this.userNick = userNick;
 		this.userMsg = userMsg;
