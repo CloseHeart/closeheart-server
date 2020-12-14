@@ -12,6 +12,7 @@ import java.net.Socket;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.time.LocalTime;
@@ -158,6 +159,7 @@ public class FriendServer extends Thread {
                               
                                 if (Covid19API.isCovid19Data(currentDate)) {
                                     int agoCnt = DBConnect.getCovid19Info(currentDate.minusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE));   // 어제 확진자 수
+
                                     currDecideCnd = DBConnect.getCovid19Info(currentDate.format(DateTimeFormatter.BASIC_ISO_DATE));   // 오늘 확진자 수
                                     newCnt = currDecideCnd - agoCnt;  // 신규 확진자 수
                                 } else {
@@ -168,8 +170,8 @@ public class FriendServer extends Thread {
                                     
                                 HashMap<String, Object> covidInfo = new HashMap<>();
                                 covidInfo.put("msg", "covid19");
-                                covidInfo.put("newCnt", String.valueOf(newCnt));
-                                covidInfo.put("currDecideCnd", String.valueOf(currDecideCnd));
+                                covidInfo.put("newCnt", String.valueOf(NumberFormat.getInstance().format(newCnt)));
+                                covidInfo.put("currDecideCnd", String.valueOf(NumberFormat.getInstance().format(currDecideCnd)));
                                 out.println(Util.createJSON(200, covidInfo));
                                 System.out.println(Util.createLogString("Friend", socket.getInetAddress().getHostAddress(), "Covid-19 Data Send Success!"));
                             } catch (Exception e) {

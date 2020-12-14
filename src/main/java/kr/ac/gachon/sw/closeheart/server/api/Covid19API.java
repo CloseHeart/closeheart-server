@@ -119,7 +119,7 @@ public class Covid19API {
     public static boolean isCovid19Data(LocalDate date){
         String currStr = date.format(DateTimeFormatter.BASIC_ISO_DATE);
         String agoStr = date.minusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE);
-        if(DBConnect.getCovid19Info(currStr) == -1 && DBConnect.getCovid19Info(agoStr) == -1){
+        if(DBConnect.getCovid19Info(currStr) == -1 || DBConnect.getCovid19Info(agoStr) == -1){
             return false;
         }else{
             return true;
