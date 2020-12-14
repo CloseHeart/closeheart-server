@@ -285,6 +285,9 @@ public class DBConnect {
 			ArrayList<String> attrList = new ArrayList<String>();
 			attrList.add("user_nick");
 			attrList.add("user_statusmsg");
+			attrList.add("user_mail");
+			attrList.add("user_birthday");
+			attrList.add("user_lasttime");
 
 			// Condition HashMap
 			HashMap<String, Object> conditionList = new HashMap<String, Object>();
@@ -293,7 +296,7 @@ public class DBConnect {
 			// SQL Select Query 전송
 			rs = DBManager.selectQuery(dbConnection, "account", attrList, conditionList);
 			if (rs.next()) {
-				user = new User(user_id, rs.getString(1), rs.getString(2), false);
+				user = new User(user_id, rs.getString(1), rs.getString(2), rs.getString(3), rs.getDate(4), rs.getTimestamp(5), false);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

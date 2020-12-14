@@ -1,5 +1,6 @@
 package kr.ac.gachon.sw.closeheart.server.object;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -10,6 +11,7 @@ public class User {
 	private String userMsg;
 	private String userEmail;
 	private Date userBirthday;
+	private Timestamp userLastTime;
 	private ArrayList<User> friends;
 	private boolean isOnline;
 
@@ -25,10 +27,13 @@ public class User {
 	}
 
 	// 친구에 담을 유저 정보
-	public User(String userID, String userNick, String userMsg, boolean isOnline) {
+	public User(String userID, String userNick, String userMsg, String userEmail, Date userBirthday, Timestamp userLastTime, boolean isOnline) {
 		this.userID = userID;
 		this.userNick = userNick;
 		this.userMsg = userMsg;
+		this.userEmail = userEmail;
+		this.userBirthday = userBirthday;
+		this.userLastTime = userLastTime;
 		this.isOnline = isOnline;
 	}
 
@@ -54,6 +59,10 @@ public class User {
 
 	public Date getUserBirthday() {
 		return userBirthday;
+	}
+
+	public Timestamp getUserLastTime() {
+		return userLastTime;
 	}
 
 	public ArrayList<User> getFriends() { return friends; }

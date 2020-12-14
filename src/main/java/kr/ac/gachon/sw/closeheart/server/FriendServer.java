@@ -13,6 +13,7 @@ import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.time.LocalTime;
@@ -311,6 +312,7 @@ public class FriendServer extends Thread {
                 return false;
             }
 
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
             JsonArray friendArray = new JsonArray();
             // friend 테이블의 행 가져옴
             ArrayList<User> friendUsers = DBConnect.AccessFriendTable(user.getUserID(),0);
@@ -319,7 +321,13 @@ public class FriendServer extends Thread {
                 if(userInfo.containsKey(friendUser.getUserID())) {
                     friendUser.setOnline(true);
                 }
-                friendArray.add(new Gson().toJson(friendUser, User.class));
+                jsonObject.addProperty("userID", friendUser.getUserID());
+                jsonObject.addProperty("userNick", friendUser.getUserNick());
+                jsonObject.addProperty("userMsg", friendUser.getUserMsg());
+                jsonObject.addProperty("userEmail", friendUser.getUserEmail());
+                jsonObject.addProperty("userBirthday", simpleDateFormat.format(friendUser.getUserBirthday()));
+                jsonObject.addProperty("userLastTime", friendUser.getUserLastTime().getTime());
+                jsonObject.addProperty("isOnline", friendUser.getOnline());
             }
 
             // 서버로 유저 정보 전송
@@ -374,11 +382,20 @@ public class FriendServer extends Thread {
                 JsonArray friendArray = new JsonArray();
                 // friend 테이블의 행 가져옴
                 ArrayList<User> friendUsers = DBConnect.AccessFriendTable(userID, 0);
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
                 for (User friendUser : friendUsers) {
+                    JsonObject jsonObject = new JsonObject();
                     if(userInfo.containsKey(friendUser.getUserID())) {
                         friendUser.setOnline(true);
                     }
-                    friendArray.add(new Gson().toJson(friendUser, User.class));
+                    jsonObject.addProperty("userID", friendUser.getUserID());
+                    jsonObject.addProperty("userNick", friendUser.getUserNick());
+                    jsonObject.addProperty("userMsg", friendUser.getUserMsg());
+                    jsonObject.addProperty("userEmail", friendUser.getUserEmail());
+                    jsonObject.addProperty("userBirthday", simpleDateFormat.format(friendUser.getUserBirthday()));
+                    jsonObject.addProperty("userLastTime", friendUser.getUserLastTime().getTime());
+                    jsonObject.addProperty("isOnline", friendUser.getOnline());
+                    friendArray.add(jsonObject);
                 }
                 System.out.println(friendArray);
 
