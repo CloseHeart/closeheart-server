@@ -279,12 +279,20 @@ public class FriendServer extends Thread {
                         else if(requestCode == 309) {
                             String inviteID = jsonObject.get("inviteID").getAsString();
                             if(userInfo.containsKey(inviteID)) {
+
+                                String roomNumber = RandomStringUtils.randomAlphanumeric(8).toLowerCase();
                                 HashMap<String, Object> inviteSendMap = new HashMap<>();
                                 inviteSendMap.put("msg", "receivechatinvite");
                                 inviteSendMap.put("inviteUserID", user.getUserID());
                                 inviteSendMap.put("inviteUserNick", user.getUserNick());
+                                inviteSendMap.put("roomNumber", roomNumber);
                                 userInfo.get(inviteID).println(Util.createJSON(200, inviteSendMap));
-                                out.println(Util.createSingleKeyValueJSON(200, "msg", "sendchatinvite"));
+
+                                HashMap<String, Object> ChatEnterMap = new HashMap<>();
+                                ChatEnterMap.put("msg", "enterchat");
+                                ChatEnterMap.put("serverPort", ServerMain.chatServerPort);
+                                ChatEnterMap.put("roomNumber", roomNumber);
+                                out.println(Util.createJSON(200, ChatEnterMap));
                             }
                             else {
                                 out.println(Util.createSingleKeyValueJSON(400, "msg", "sendchatinvite"));
@@ -294,23 +302,15 @@ public class FriendServer extends Thread {
                         else if(requestCode == 310) {
                             String inviteAnswer = jsonObject.get("chatinvite").getAsString();
                             String inviteUserID = jsonObject.get("inviteUserID").getAsString();
+                            String roomNumber = jsonObject.get("roomNumber").getAsString();
                             if(inviteAnswer.equals("accept")) {
                                 if(userInfo.containsKey(inviteUserID)) {
-                                    String roomNumber = RandomStringUtils.randomAlphanumeric(8);
-
                                     // 요청 받은 Client 입장용
                                     HashMap<String, Object> receiverChatEnterMap = new HashMap<>();
                                     receiverChatEnterMap.put("msg", "enterchat");
                                     receiverChatEnterMap.put("serverPort", ServerMain.chatServerPort);
                                     receiverChatEnterMap.put("roomNumber", roomNumber);
                                     out.println(Util.createJSON(200, receiverChatEnterMap));
-
-                                    // 요청 보낸 Client 입장용
-                                    HashMap<String, Object> senderChatEnterMap = new HashMap<>();
-                                    senderChatEnterMap.put("msg", "chatinviteresult");
-                                    senderChatEnterMap.put("serverPort", ServerMain.chatServerPort);
-                                    senderChatEnterMap.put("roomNumber", roomNumber);
-                                    userInfo.get(inviteUserID).println(Util.createJSON(200, senderChatEnterMap));
                                 }
                             }
                             else if(inviteAnswer.equals("decline")) {
@@ -318,6 +318,7 @@ public class FriendServer extends Thread {
                                     HashMap<String, Object> senderChatEnterMap = new HashMap<>();
                                     senderChatEnterMap.put("msg", "chatinviteresult");
                                     senderChatEnterMap.put("targetUserNick", user.getUserNick());
+                                    senderChatEnterMap.put("roomNumber", roomNumber);
                                     userInfo.get(inviteUserID).println(Util.createJSON(403, senderChatEnterMap));
                                 }
                             }
