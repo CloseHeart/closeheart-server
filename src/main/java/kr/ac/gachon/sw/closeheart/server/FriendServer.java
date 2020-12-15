@@ -315,7 +315,10 @@ public class FriendServer extends Thread {
                             }
                             else if(inviteAnswer.equals("decline")) {
                                 if(userInfo.containsKey(inviteUserID)) {
-                                    userInfo.get(inviteUserID).println(Util.createSingleKeyValueJSON(403, "msg", "chatinviteresult"));
+                                    HashMap<String, Object> senderChatEnterMap = new HashMap<>();
+                                    senderChatEnterMap.put("msg", "chatinviteresult");
+                                    senderChatEnterMap.put("targetUserNick", user.getUserNick());
+                                    userInfo.get(inviteUserID).println(Util.createJSON(403, senderChatEnterMap));
                                 }
                             }
                         }
