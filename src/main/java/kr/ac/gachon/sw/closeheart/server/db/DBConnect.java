@@ -1108,4 +1108,48 @@ public class DBConnect {
 		return users;
 	}
 
+	/*
+	 * 유저 찾기
+	 * @author Minjae Seon
+	 * @param search 검색 문자열
+	 * @return 해당하는 User 목록
+	 */
+	public static ArrayList<User> searchUser(String search) {
+		Connection dbConnection = null;
+		ArrayList<User> users = new ArrayList<>();
+		try {
+			// DB 연결 수립
+			dbConnection = DBManager.getDBConnection();
+
+			PreparedStatement preparedStatement = dbConnection.prepareStatement("select user_id, user_nick, user_statusmsg, user_mail, user_birthday, user_lasttime from account where user_id like ? or user_nick like ?");
+			preparedStatement.setString(1, "%"+search+"%");
+			preparedStatement.setString(2, "%"+search+"%");
+
+			ResultSet resultSet = preparedStatement.executeQuery();
+			while(resultSet.next()) {
+				users.add(new User(
+						resultSet.getString(1),
+						resultSet.getString(2),
+						resultSet.getString(3),
+						resultSet.getString(4),
+						resultSet.getDate(5),
+						resultSet.getTimestamp(6),
+						false
+				));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			if(dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException throwables) {
+					throwables.printStackTrace();
+				}
+			}
+		}
+		return users;
+	}
+
 }

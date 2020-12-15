@@ -1,6 +1,7 @@
 
 package kr.ac.gachon.sw.closeheart.server;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import kr.ac.gachon.sw.closeheart.server.db.DBConnect;
@@ -11,16 +12,15 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.HashSet;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ChatServer extends Thread {
     private int port;
-    private static Set<PrintWriter> writers = new HashSet<>();    // 모든 writer
 
     private static HashMap<String, ArrayList<Pair<String, PrintWriter>>> roomInfo = new HashMap<>(); // Room Info + User ID List
+    private static HashMap<String, ArrayList<String>> roomPeopleInfo = new HashMap<>(); // Room Info + User Nick List
 
     public ChatServer(int port) {
         this.port = port;
@@ -118,24 +118,26 @@ public class ChatServer extends Thread {
                             Pair<String, PrintWriter> pair = Pair.of(myUser.getUserID(), out);
                             if (!roomInfo.containsKey(currentRoomNumber)) {
                                 ArrayList<Pair<String, PrintWriter>> userList = new ArrayList<>();
+                                ArrayList<String> userNickList = new ArrayList<>();
                                 userList.add(pair);
+                                userNickList.add(myUser.getUserNick());
                                 roomInfo.put(currentRoomNumber, userList);
+                                roomPeopleInfo.put(currentRoomNumber, userNickList);
                             } else {
                                 // 있으면 그냥 방에다 배정
                                 roomInfo.get(currentRoomNumber).add(pair);
+                                roomPeopleInfo.get(currentRoomNumber).add(myUser.getUserNick());
                             }
 
                             // 입장 메시지 전송
                             HashMap<String, Object> joinMap = new HashMap<>();
                             joinMap.put("type", "join");
                             joinMap.put("user", myUser.getUserNick());
-
+                            joinMap.put("userlist", new Gson().toJsonTree(roomPeopleInfo.get(currentRoomNumber)));
 
                             ArrayList<Pair<String, PrintWriter>> currentUserList = roomInfo.get(currentRoomNumber);
                             for (Pair<String, PrintWriter> rpair : currentUserList) {
-                                if (!rpair.getKey().equals(myUser.getUserID())) {
-                                    rpair.getValue().println(Util.createJSON(200, joinMap));
-                                }
+                                rpair.getValue().println(Util.createJSON(200, joinMap));
                             }
                             continue;
                         }
@@ -160,11 +162,14 @@ public class ChatServer extends Thread {
                         /* 채팅방 나가기 */
                         else if (requestCode == 212) {
                             System.out.println(Util.createLogString("Chat", socket.getInetAddress().getHostAddress(), "Exit Chat Room Request"));
+                            // 닉네임 목록에서 제거
+                            roomPeopleInfo.get(currentRoomNumber).remove(myUser.getUserNick());
 
                             // 퇴장 알림
                             HashMap<String, Object> exitMap = new HashMap<>();
                             exitMap.put("type", "exit");
                             exitMap.put("user", myUser.getUserNick());
+                            exitMap.put("userlist", new Gson().toJsonTree(roomPeopleInfo.get(currentRoomNumber)));
 
                             // 현재 방 번호 사람들에게 모두 전송
                             ArrayList<Pair<String, PrintWriter>> currentUserList = roomInfo.get(currentRoomNumber);
