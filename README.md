@@ -1,6 +1,13 @@
 # closeheart-server
 Chat Program '마음을 가까이 (CloseHeart)' Server
 
+# 주의사항
+해당 프로젝트에는 DB 접속 정보 및 메일 서버 접속 정보가 모두 제외되어 있습니다.
+
+실제로 이 프로젝트를 빌드하기 위해서는
+ - SQL 폴더의 closeheart.sql을 이용해 자체적으로 DB 연결 후, 연결 정보 부분을 변경하셔야 합니다.
+ - 사용할 수 있는 메일 주소 및 계정 정보를 이용해 메일 연결 정보 부분을 변경하셔야 합니다.
+
 ## Third-Party Notice
 ### Gson (https://github.com/google/gson)
     Copyright 2008 Google Inc.
