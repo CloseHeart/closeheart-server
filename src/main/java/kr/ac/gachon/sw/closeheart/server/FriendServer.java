@@ -7,7 +7,6 @@ import kr.ac.gachon.sw.closeheart.server.util.Util;
 import kr.ac.gachon.sw.closeheart.server.api.Covid19API;
 import org.apache.commons.lang3.RandomStringUtils;
 import java.io.PrintWriter;
-import java.lang.reflect.Array;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.NumberFormat;
@@ -322,27 +321,34 @@ public class FriendServer extends Thread {
                         }
                         /* 유저 정보 요청 */
                         else if(requestCode == 311) {
-                            String requestID = jsonObject.get("requestID").getAsString();
-                            User requestUser = DBConnect.AccessAccountWithFriendId(requestID);
+                            String searchStr = jsonObject.get("searchStr").getAsString();
+                            ArrayList<User> searchResult = DBConnect.searchUser(searchStr);
 
-                            if(requestUser != null) {
-                                SimpleDateFormat bdayFormat = new SimpleDateFormat("yyyy-MM-dd");
-                                JsonObject requestUserObject = new JsonObject();
-                                requestUserObject.addProperty("userID", requestUser.getUserID());
-                                requestUserObject.addProperty("userNick", requestUser.getUserNick());
-                                requestUserObject.addProperty("userMsg", requestUser.getUserMsg());
-                                requestUserObject.addProperty("userEmail", requestUser.getUserEmail());
-                                requestUserObject.addProperty("userBirthday", bdayFormat.format(requestUser.getUserBirthday()));
-                                requestUserObject.addProperty("userLastTime", requestUser.getUserLastTime().getTime());
+                            // 유저 정보 전송
+                            JsonArray userArray = new JsonArray();
+                            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                            for (User searchUser : searchResult) {
+                                JsonObject searchObject = new JsonObject();
+                                // 본인 제외
+                                if(!searchUser.getUserID().equals(user.getUserID())) {
+                                    if (userInfo.containsKey(user.getUserID())) {
+                                        user.setOnline(true);
+                                    }
+                                    searchObject.addProperty("userID", searchUser.getUserID());
+                                    searchObject.addProperty("userNick", searchUser.getUserNick());
+                                    searchObject.addProperty("userMsg", searchUser.getUserMsg());
+                                    searchObject.addProperty("userEmail", searchUser.getUserEmail());
+                                    searchObject.addProperty("userBirthday", simpleDateFormat.format(searchUser.getUserBirthday()));
+                                    searchObject.addProperty("userLastTime", searchUser.getUserLastTime().getTime());
+                                    searchObject.addProperty("isOnline", searchUser.getOnline());
+                                    userArray.add(searchObject);
+                                }
+                            }
 
-                                HashMap<String, Object> infoRequestMap = new HashMap<>();
-                                infoRequestMap.put("msg", "userinforesponse");
-                                infoRequestMap.put("friendinfo", requestUserObject.toString());
-                                out.println(Util.createJSON(200, infoRequestMap));
-                            }
-                            else {
-                                out.println(Util.createSingleKeyValueJSON(400, "msg", "userinforesponse"));
-                            }
+                            HashMap<String, Object> searchUserMap = new HashMap<>();
+                            searchUserMap.put("msg", "userinforesponse");
+                            searchUserMap.put("userinfo", userArray);
+                            out.println(Util.createJSON(200, searchUserMap));
                         }
                         /* 회원 탈퇴 요청 */
                         else if(requestCode == 312) {
@@ -374,6 +380,15 @@ public class FriendServer extends Thread {
                             else {
                                 out.println(Util.createSingleKeyValueJSON(400, "msg", "removeid"));
                             }
+                        }
+                        /* 채팅방 접속 요청 */
+                        else if(requestCode == 313) {
+                            String roomNumber = jsonObject.get("roomNumber").getAsString();
+                            HashMap<String, Object> senderChatEnterMap = new HashMap<>();
+                            senderChatEnterMap.put("msg", "enterchat");
+                            senderChatEnterMap.put("serverPort", ServerMain.chatServerPort);
+                            senderChatEnterMap.put("roomNumber", roomNumber);
+                            out.println(Util.createJSON(200, senderChatEnterMap));
                         }
                     }
                     /* 로그아웃 처리 */

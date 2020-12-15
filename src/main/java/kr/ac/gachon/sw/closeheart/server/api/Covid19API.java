@@ -16,7 +16,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public class Covid19API {
-    private static String serviceKey = "%2F62vvihbBAaUdKv4wHFwsSP6ZMNTNRpGE%2FZEurefpJYtCWzFM1blJ293Kb66k9GgndAigRBhKXLvdkjsbOKW1Q%3D%3D";
+    private static String serviceKey = "";
     private static String serviceURL = "http://openapi.data.go.kr/openapi/service/rest/Covid19/getCovid19InfStateJson";
     private static String currentDateStr = "";
     private static String agoDateStr = "";
