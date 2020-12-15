@@ -336,7 +336,7 @@ public class FriendServer extends Thread {
                                 // 본인 제외
                                 if(!searchUser.getUserID().equals(user.getUserID())) {
                                     if (userInfo.containsKey(user.getUserID())) {
-                                        user.setOnline(true);
+                                        searchUser.setOnline(true);
                                     }
                                     searchObject.addProperty("userID", searchUser.getUserID());
                                     searchObject.addProperty("userNick", searchUser.getUserNick());
