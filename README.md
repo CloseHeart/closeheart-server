@@ -5,6 +5,8 @@ Chat Program '마음을 가까이 (CloseHeart)' Server
 https://www.youtube.com/watch?v=9RhL-xF7mcM
 
 ## 주의사항
+테스트를 해보시려면 https://github.com/CloseHeart/closeheart-testclient <-- 이 주소를 꼭 확인해주세요.
+
 해당 프로젝트에는 DB 접속 정보 및 메일 서버 접속 정보가 모두 제외되어 있습니다.
 
 실제로 이 프로젝트를 빌드하기 위해서는
