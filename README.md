@@ -1,11 +1,10 @@
 # closeheart-server
 Chat Program '마음을 가까이 (CloseHeart)' Server
 
-# Youtube URL
-
+## Presentation Youtube URL
 https://www.youtube.com/watch?v=9RhL-xF7mcM
 
-# 주의사항
+## 주의사항
 해당 프로젝트에는 DB 접속 정보 및 메일 서버 접속 정보가 모두 제외되어 있습니다.
 
 실제로 이 프로젝트를 빌드하기 위해서는
